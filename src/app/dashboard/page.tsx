@@ -7,6 +7,10 @@ import { isLoggedIn } from "@/lib/auth";
 
 export default function Dashboard() {
   const router = useRouter();
+    const logout = () => {
+    localStorage.removeItem("token");
+    router.push("/login");
+  };
   const [capsules, setCapsules] = useState<any[]>([]);
 
   useEffect(() => {
@@ -33,7 +37,16 @@ export default function Dashboard() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Your Capsules</h1>
+<div className="flex justify-between items-center mb-6">
+  <h1 className="text-2xl font-bold">Your Capsules</h1>
+
+  <button
+    onClick={logout}
+    className="text-sm text-red-500 hover:underline"
+  >
+    Logout
+  </button>
+</div>
 
       {capsules.length === 0 && (
         <p className="text-gray-500">No capsules yet.</p>
