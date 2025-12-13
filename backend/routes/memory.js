@@ -23,15 +23,22 @@ const auth = (req, res, next) => {
 
 // ADD MEMORY
 router.post("/", auth, async (req, res) => {
+  const { capsuleId, content } = req.body;
+
+  if (!capsuleId || !content) {
+    return res.status(400).json({ message: "capsuleId and content are required" });
+  }
+
   const memory = await Memory.create({
-    capsuleId: req.body.capsuleId,
+    capsuleId,
     type: "text",
-    content: req.body.content,
+    content,
     createdBy: req.userId
   });
 
   res.json(memory);
 });
+
 
 // GET MEMORIES FOR A CAPSULE
 router.get("/:capsuleId", auth, async (req, res) => {
@@ -58,4 +65,30 @@ router.post("/image", auth, upload.single("image"), async (req, res) => {
 
   res.json(memory);
 });
+
+// DELETE MEMORY
+
+router.delete("/:id", auth, async (req, res) => {
+  try {
+    const memory = await Memory.findById(req.params.id);
+
+    if (!memory) {
+      return res.status(404).json({ message: "Memory not found" });
+    }
+
+    // 🔐 Ownership check (IMPORTANT)
+    if (memory.createdBy.toString() !== req.userId) {
+      return res.status(403).json({ message: "Not authorized to delete this memory" });
+    }
+
+    // 🧨 Permanent delete from MongoDB
+    await Memory.findByIdAndDelete(req.params.id);
+
+    res.json({ message: "Memory deleted permanently" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to delete memory" });
+  }
+});
+
+
 module.exports = router;
