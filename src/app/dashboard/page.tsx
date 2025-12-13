@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { isLoggedIn } from "@/lib/auth";
 
 export default function Dashboard() {
@@ -31,16 +32,35 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div>
-      <h1>Your Capsules</h1>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-6">Your Capsules</h1>
 
-      {capsules.map(c => (
-        <div key={c._id}>
-          <h3>{c.title}</h3>
-          <p>{c.theme}</p>
-          <p>Unlocks on: {new Date(c.unlockAt).toDateString()}</p>
-        </div>
-      ))}
+      {capsules.length === 0 && (
+        <p className="text-gray-500">No capsules yet.</p>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {capsules.map(c => (
+          <Link
+            key={c._id}
+            href={`/dashboard/capsule/${c._id}`}
+            className=" bg-white border border-gray-200 rounded-2xl p-5 hover:shadow-lg hover:border-gray-300 transition block"
+>
+          <h3 className="text-lg font-semibold text-gray-900">
+  {c.title}
+</h3>
+
+<p className="text-sm font-medium text-indigo-600">
+  {c.theme}
+</p>
+
+<p className="text-xs mt-2 text-gray-500">
+  Unlocks on {new Date(c.unlockAt).toDateString()}
+</p>
+
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

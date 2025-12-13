@@ -11,6 +11,7 @@ app.use(express.json());
 
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/capsules", require("./routes/capsule"));
+app.use("/api/memories", require("./routes/memory"));
 
 
 mongoose.connect(process.env.MONGO_URI)
