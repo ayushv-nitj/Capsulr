@@ -64,7 +64,8 @@ export default function Dashboard() {
           <div className="flex items-center gap-4">
             <Link href="/profile" className="block">
               <img
-                src={getAvatarUrl(email)}
+                src={localStorage.getItem("profileImage") || getAvatarUrl(email)}
+
                 alt="Profile"
                 className="w-14 h-14 rounded-full border-2 border-white/30 shadow-sm hover:scale-105 transition-transform"
               />
