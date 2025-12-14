@@ -36,4 +36,14 @@ router.post("/profile-image", auth, upload.single("image"), async (req, res) => 
   res.json({ profileImage: user.profileImage });
 });
 
+
+// GET CURRENT USER
+router.get("/me", auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).select("-password");
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch user" });
+  }
+});
 module.exports = router;

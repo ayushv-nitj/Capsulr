@@ -121,7 +121,7 @@ export default function CreateCapsule() {
               <input type="time"
                 value={unlockTime}
                  onChange={(e) => setUnlockTime(e.target.value)}
-                 className="w-full px-3 py-2 rounded-lg border"
+                 className="w-full px-3 py-2 rounded-lg border text-black"
 />
 
             </label>

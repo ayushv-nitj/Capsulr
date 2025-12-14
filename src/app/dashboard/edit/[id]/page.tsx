@@ -79,53 +79,70 @@ const recipientList = recipients
   if (loading) return <p className="p-6">Loading capsule…</p>;
 
   return (
-    <div className="p-6 max-w-xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Edit Capsule</h1>
+    <div className="app-container p-6">
+      <div className="card max-w-xl mx-auto">
+        <div className="mb-4">
+          <h1 className="text-2xl font-bold mb-1">Edit Capsule</h1>
+          <p className="text-sm muted">Update capsule details — no changes to existing memories.</p>
+        </div>
 
-      <input
-        className="w-full mb-3 px-4 py-2 border rounded-lg"
-        placeholder="Capsule title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-      />
+        <div className="space-y-3">
+          <label className="text-xs muted">Title</label>
+          <input
+            className="w-full px-4 py-3 rounded-lg  bg-white text-black"
+            placeholder="Capsule title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
 
-      <input
-        className="w-full mb-3 px-4 py-2 border rounded-lg"
-        placeholder="Theme"
-        value={theme}
-        onChange={(e) => setTheme(e.target.value)}
-      />
+          <label className="text-xs muted">Theme</label>
+          <input
+            className="w-full px-4 py-3 rounded-lg  bg-white text-black"
+            placeholder="Theme"
+            value={theme}
+            onChange={(e) => setTheme(e.target.value)}
+          />
 
-      <input
-  className="w-full mb-3 px-4 py-2 border rounded-lg"
-  placeholder="Recipients emails (comma separated)"
-  value={recipients}
-  onChange={(e) => setRecipients(e.target.value)}
-/>
+          <label className="text-xs muted">Recipients (comma separated)</label>
+          <input
+            className="w-full px-4 py-3 rounded-lg  bg-white text-black"
+            placeholder="Recipients emails (comma separated)"
+            value={recipients}
+            onChange={(e) => setRecipients(e.target.value)}
+          />
 
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <label className="text-xs muted">Unlock date</label>
+              <input
+                type="date"
+                className="w-full px-4 py-3 rounded-lg bg-white text-black"
+                value={unlockDate}
+                onChange={(e) => setUnlockDate(e.target.value)}
+              />
+            </div>
 
-      <div className="flex gap-3 mb-4">
-        <input
-          type="date"
-          className="flex-1 px-4 py-2 border rounded-lg"
-          value={unlockDate}
-          onChange={(e) => setUnlockDate(e.target.value)}
-        />
+            <div className="flex-1">
+              <label className="text-xs muted">Unlock time</label>
+              <input
+                type="time"
+                className="w-full px-4 py-3 rounded-lg  bg-white text-black"
+                value={unlockTime}
+                onChange={(e) => setUnlockTime(e.target.value)}
+              />
+            </div>
+          </div>
 
-        <input
-          type="time"
-          className="flex-1 px-4 py-2 border rounded-lg"
-          value={unlockTime}
-          onChange={(e) => setUnlockTime(e.target.value)}
-        />
+          <div className="pt-2">
+            <button
+              onClick={updateCapsule}
+              className="btn btn-primary w-full"
+            >
+              Save Changes
+            </button>
+          </div>
+        </div>
       </div>
-
-      <button
-        onClick={updateCapsule}
-        className="w-full bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700"
-      >
-        Save Changes
-      </button>
     </div>
   );
 }

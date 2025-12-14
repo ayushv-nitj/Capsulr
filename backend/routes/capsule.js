@@ -75,6 +75,7 @@ router.get("/:id", auth, async (req, res) => {
     }
 
     // 🔐 Auto-unlock when time passes
+    const now = new Date();
     if (capsule.isLocked && capsule.unlockAt && now >= capsule.unlockAt) {
   capsule.isLocked = false;
   capsule.isUnlocked = true;
