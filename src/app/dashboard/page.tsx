@@ -7,28 +7,36 @@ import { isLoggedIn } from "@/lib/auth";
 import { getAvatarUrl } from "@/lib/avatar";
 
 export default function Dashboard() {
-    const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
 
-useEffect(() => {
-  const img = localStorage.getItem("profileImage");
-  setProfileImage(img);
-}, []);
+  useEffect(() => {
+    const img = localStorage.getItem("profileImage");
+    setProfileImage(img);
+  }, []);
 
-function getTimeLeft(unlockAt: string) {
-  const diff = +new Date(unlockAt) - +new Date();
-  if (diff <= 0) return null;
+  function getTimeLeft(unlockAt: string) {
+    const diff = +new Date(unlockAt) - +new Date();
+    if (diff <= 0) return null;
 
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+    const minutes = Math.floor((diff / (1000 * 60)) % 60);
+    const seconds = Math.floor((diff / 1000) % 60);
 
-  return { days, hours };
-}
-
+    return { days, hours, minutes, seconds };
+  }
 
   const router = useRouter();
   const [capsules, setCapsules] = useState<any[]>([]);
   const [email, setEmail] = useState("");
   const [query, setQuery] = useState("");
+
+  // tick state so countdowns update each second
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   // logout handler
   const logout = () => {
@@ -82,8 +90,7 @@ function getTimeLeft(unlockAt: string) {
           <div className="flex items-center gap-4">
             <Link href="/profile" className="block">
               <img
-src={profileImage || getAvatarUrl(email)}
-
+                src={profileImage || getAvatarUrl(email)}
                 alt="Profile"
                 className="w-14 h-14 rounded-full border-2 border-white/30 shadow-sm hover:scale-105 transition-transform"
               />
@@ -91,10 +98,10 @@ src={profileImage || getAvatarUrl(email)}
 
             <div>
               <h1 className="text-2xl md:text-3xl font-extrabold text-white drop-shadow">
-                Your Capsules
+                Capsulr
               </h1>
               <p className="text-sm text-white/90">
-                Memories you created or collaborated on
+                Memories you can create or collaborate on
               </p>
             </div>
           </div>
@@ -130,7 +137,7 @@ src={profileImage || getAvatarUrl(email)}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search capsules..."
-            className="md:hidden px-3 py-2 rounded-full bg-white/90 placeholder-gray-500 focus:outline-none w-48"
+            className="md:hidden px-3 py-2 rounded-full bg-white/90 placeholder-gray-500 focus:outline-none w-48 text-black"
           />
         </div>
       </div>
@@ -144,48 +151,81 @@ src={profileImage || getAvatarUrl(email)}
         {filtered.map((c, i) => {
           const g = gradients[i % gradients.length];
           return (
-            <Link
-              key={c._id}
-              href={`/dashboard/capsule/${c._id}`}
-              className="relative rounded-2xl overflow-hidden group shadow-lg transform hover:-translate-y-1 transition"
-            >
-              <div className={`absolute inset-0 bg-linear-to-br ${g} opacity-90 group-hover:opacity-95`} />
-              <div className="relative p-6 bg-white/60 backdrop-blur-sm min-h-40 flex flex-col justify-between">
-              <div>
-  <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-    {c.title}
-    {c.isLocked && (
-      <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-semibold">
-        🔒 Locked
-      </span>
-    )}
-  </h3>
+            <div
+  key={c._id}
+  onClick={() => router.push(`/dashboard/capsule/${c._id}`)}
+  className="relative rounded-2xl overflow-hidden group shadow-lg transform hover:-translate-y-1 transition cursor-pointer"
+>
+  <div className={`absolute inset-0 bg-linear-to-br ${g} opacity-90 group-hover:opacity-95`} />
 
-  <p className="mt-1 text-sm font-medium text-gray-700">{c.theme}</p>
+  <div className="relative p-6 bg-white/60 backdrop-blur-sm min-h-40 flex flex-col justify-between">
+    <div>
+      <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+        {c.title}
+        {c.isLocked && (
+          <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-semibold">
+            🔒 Locked
+          </span>
+        )}
+      </h3>
 
-  {c.isLocked && c.unlockAt && (() => {
-    const t = getTimeLeft(c.unlockAt);
-    return t ? (
-      <p className="mt-2 text-xs text-indigo-700 font-medium">
-        ⏳ Unlocks in {t.days}d {t.hours}h
+      <p className="mt-1 text-sm font-medium text-gray-700">{c.theme}</p>
+
+      <div className="mt-3 flex gap-2">
+        {/* EDIT */}
+        <Link
+          href={`/dashboard/edit/${c._id}`}
+          onClick={(e) => e.stopPropagation()}
+          className="text-xs px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
+        >
+          Edit
+        </Link>
+
+        {/* DELETE */}
+        <button
+          onClick={async (e) => {
+            e.stopPropagation();
+
+            if (!confirm("Delete this capsule permanently?")) return;
+
+            const token = localStorage.getItem("token");
+
+            await fetch(`http://localhost:5000/api/capsules/${c._id}`, {
+              method: "DELETE",
+              headers: { Authorization: token || "" },
+            });
+
+            setCapsules(prev => prev.filter(x => x._id !== c._id));
+          }}
+          className="text-xs px-3 py-1 rounded-full bg-red-100 text-red-600 hover:bg-red-200"
+        >
+          Delete
+        </button>
+      </div>
+
+      {c.isLocked && c.unlockAt && (() => {
+        const t = getTimeLeft(c.unlockAt);
+        return t ? (
+          <p className="mt-2 text-xs text-indigo-700 font-medium">
+            ⏳ Unlocks in {t.days}d {t.hours}h {t.minutes}m {t.seconds}s
+          </p>
+        ) : null;
+      })()}
+    </div>
+
+    <div className="mt-4 flex items-center justify-between">
+      <p className="text-xs text-gray-800">
+        {c.isLocked
+          ? `Unlocks on ${new Date(c.unlockAt).toDateString()}`
+          : "🔓 Unlocked"}
       </p>
-    ) : null;
-  })()}
+      <span className="text-xs px-3 py-1 rounded-full bg-white/70 text-gray-900 font-semibold">
+        {c.collaborators?.length || 0} collaborators
+      </span>
+    </div>
+  </div>
 </div>
 
-
-                <div className="mt-4 flex items-center justify-between">
-<p className="text-xs text-gray-800">
-  {c.isLocked
-    ? `Unlocks on ${new Date(c.unlockAt).toDateString()}`
-    : "🔓 Unlocked"}
-</p>
-                  <span className="text-xs px-3 py-1 rounded-full bg-white/70 text-gray-900 font-semibold">
-                    {c.collaborators?.length || 0} collaborators
-                  </span>
-                </div>
-              </div>
-            </Link>
           );
         })}
       </div>

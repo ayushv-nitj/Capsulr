@@ -79,5 +79,53 @@ router.get("/:id", auth, async (req, res) => {
   res.json(capsule);
 });
 
+// UPDATE CAPSULE
+router.put("/:id", auth, async (req, res) => {
+  try {
+    const capsule = await Capsule.findById(req.params.id);
+
+    if (!capsule) {
+      return res.status(404).json({ message: "Capsule not found" });
+    }
+
+    if (capsule.owner.toString() !== req.userId) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    const updated = await Capsule.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+
+    res.json(updated);
+  } catch {
+    res.status(500).json({ message: "Update failed" });
+  }
+});
+
+
+// DELETE CAPSULE
+router.delete("/:id", auth, async (req, res) => {
+  try {
+    const capsule = await Capsule.findById(req.params.id);
+
+    if (!capsule) {
+      return res.status(404).json({ message: "Capsule not found" });
+    }
+
+    // only owner can delete
+    if (capsule.owner.toString() !== req.userId) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    await Capsule.findByIdAndDelete(req.params.id);
+    res.json({ message: "Capsule deleted" });
+  } catch (err) {
+    res.status(500).json({ message: "Delete failed" });
+  }
+});
+
+
 
 module.exports = router;

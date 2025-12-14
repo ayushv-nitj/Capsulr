@@ -7,15 +7,20 @@ export default function CreateCapsule() {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [theme, setTheme] = useState("");
-  const [unlockAt, setUnlockAt] = useState("");
+  const [unlockDate, setUnlockDate] = useState("");
+  const [unlockTime, setUnlockTime] = useState("12:00");
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const [recipients, setRecipients] = useState("");
+
 
   const submit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     setError("");
 
-    if (!title.trim() || !theme.trim() || !unlockAt) {
+    if (!title.trim() || !theme.trim() || !unlockDate) {
       setError("Please fill all fields.");
       return;
     }
@@ -23,6 +28,13 @@ export default function CreateCapsule() {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
+
+       const unlockAt = new Date(`${unlockDate}T${unlockTime}`);
+
+       const recipientList = recipients
+  .split(",")
+  .map(e => e.trim())
+  .filter(Boolean);
 
       const res = await fetch("http://localhost:5000/api/capsules", {
         method: "POST",
@@ -34,7 +46,8 @@ export default function CreateCapsule() {
           title,
           theme,
           unlockType: "date",
-          unlockAt
+          unlockAt,
+          recipients: recipientList
         })
       });
 
@@ -88,13 +101,29 @@ export default function CreateCapsule() {
             </label>
 
             <label className="block">
+              <span className="text-sm font-medium text-gray-700">Recipients (comma-separated emails)</span>
+              <input
+                value={recipients}
+                onChange={(e) => setRecipients(e.target.value)}
+                placeholder="e.g., friend@example.com, colleague@example.com"
+                className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition"
+              />
+            </label>
+
+            <label className="block">
               <span className="text-sm font-medium text-gray-700">Unlock Date</span>
               <input
                 type="date"
-                value={unlockAt}
-                onChange={(e) => setUnlockAt(e.target.value)}
+                value={unlockDate}
+                onChange={(e) => setUnlockDate(e.target.value)}
                 className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-300 transition"
               />
+              <input type="time"
+                value={unlockTime}
+                 onChange={(e) => setUnlockTime(e.target.value)}
+                 className="w-full px-3 py-2 rounded-lg border"
+/>
+
             </label>
 
             {error && (
@@ -117,9 +146,9 @@ export default function CreateCapsule() {
               <button
                 type="button"
                 onClick={() => router.push("/dashboard")}
-                className="text-sm text-gray-600 hover:underline"
+                className="text-l text-gray-600 hover:underline"
               >
-                Cancel
+                Back
               </button>
             </div>
           </div>
