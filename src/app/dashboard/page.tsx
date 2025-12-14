@@ -7,6 +7,24 @@ import { isLoggedIn } from "@/lib/auth";
 import { getAvatarUrl } from "@/lib/avatar";
 
 export default function Dashboard() {
+    const [profileImage, setProfileImage] = useState<string | null>(null);
+
+useEffect(() => {
+  const img = localStorage.getItem("profileImage");
+  setProfileImage(img);
+}, []);
+
+function getTimeLeft(unlockAt: string) {
+  const diff = +new Date(unlockAt) - +new Date();
+  if (diff <= 0) return null;
+
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+
+  return { days, hours };
+}
+
+
   const router = useRouter();
   const [capsules, setCapsules] = useState<any[]>([]);
   const [email, setEmail] = useState("");
@@ -64,7 +82,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-4">
             <Link href="/profile" className="block">
               <img
-                src={localStorage.getItem("profileImage") || getAvatarUrl(email)}
+src={profileImage || getAvatarUrl(email)}
 
                 alt="Profile"
                 className="w-14 h-14 rounded-full border-2 border-white/30 shadow-sm hover:scale-105 transition-transform"
@@ -133,13 +151,35 @@ export default function Dashboard() {
             >
               <div className={`absolute inset-0 bg-linear-to-br ${g} opacity-90 group-hover:opacity-95`} />
               <div className="relative p-6 bg-white/60 backdrop-blur-sm min-h-40 flex flex-col justify-between">
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">{c.title}</h3>
-                  <p className="mt-1 text-sm font-medium text-gray-700">{c.theme}</p>
-                </div>
+              <div>
+  <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+    {c.title}
+    {c.isLocked && (
+      <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-semibold">
+        🔒 Locked
+      </span>
+    )}
+  </h3>
+
+  <p className="mt-1 text-sm font-medium text-gray-700">{c.theme}</p>
+
+  {c.isLocked && c.unlockAt && (() => {
+    const t = getTimeLeft(c.unlockAt);
+    return t ? (
+      <p className="mt-2 text-xs text-indigo-700 font-medium">
+        ⏳ Unlocks in {t.days}d {t.hours}h
+      </p>
+    ) : null;
+  })()}
+</div>
+
 
                 <div className="mt-4 flex items-center justify-between">
-                  <p className="text-xs text-gray-800">Unlocks on {new Date(c.unlockAt).toDateString()}</p>
+<p className="text-xs text-gray-800">
+  {c.isLocked
+    ? `Unlocks on ${new Date(c.unlockAt).toDateString()}`
+    : "🔓 Unlocked"}
+</p>
                   <span className="text-xs px-3 py-1 rounded-full bg-white/70 text-gray-900 font-semibold">
                     {c.collaborators?.length || 0} collaborators
                   </span>

@@ -1,10 +1,12 @@
+const fs = require("fs");
+
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const Memory = require("../models/Memory");
 const multer = require("multer");
 const cloudinary = require("../config/cloudinary");
 
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = require("../middleware/upload");
 const router = express.Router();
 
 // auth middleware
@@ -26,18 +28,21 @@ router.post("/", auth, async (req, res) => {
   const { capsuleId, content } = req.body;
 
   if (!capsuleId || !content) {
-    return res.status(400).json({ message: "capsuleId and content are required" });
+    return res
+      .status(400)
+      .json({ message: "capsuleId and content are required" });
   }
 
   const memory = await Memory.create({
     capsuleId,
     type: "text",
     content,
-    createdBy: req.userId
+    createdBy: req.userId,
   });
 
   res.json(memory);
 });
+
 
 
 // GET MEMORIES FOR A CAPSULE
@@ -50,21 +55,40 @@ router.get("/:capsuleId", auth, async (req, res) => {
 });
 
 
-// IMAGE MEMORY
-router.post("/image", auth, upload.single("image"), async (req, res) => {
-  const result = await cloudinary.uploader.upload(
-    `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`
-  );
 
-  const memory = await Memory.create({
-    capsuleId: req.body.capsuleId,
-    type: "image",
-    content: result.secure_url,
-    createdBy: req.userId
-  });
+// MEDIA MEMORY
+router.post("/media", auth, upload.single("file"), async (req, res) => {
+  try {
+    const { capsuleId, type, caption } = req.body;
 
-  res.json(memory);
+    console.log("CAPTION RECEIVED:", caption);
+    console.log("FILE RECEIVED:", req.file);
+
+    if (!req.file) {
+      return res.status(400).json({ message: "File not received by server" });
+    }
+
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      resource_type: type === "audio" || type === "video" ? "video" : "image",
+    });
+
+    fs.unlinkSync(req.file.path);
+
+    const memory = await Memory.create({
+      capsuleId,
+      type,
+      content: result.secure_url,
+      caption: caption || "",
+      createdBy: req.userId,
+    });
+
+    res.json(memory);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Media upload failed" });
+  }
 });
+
 
 // DELETE MEMORY
 

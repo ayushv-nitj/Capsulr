@@ -24,6 +24,11 @@ const capsuleSchema = new mongoose.Schema({
     ref: "User"
   }],
 
+  isLocked: {
+  type: Boolean,
+  default: true
+},
+
   isUnlocked: {
     type: Boolean,
     default: false

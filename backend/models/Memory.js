@@ -1,22 +1,36 @@
 const mongoose = require("mongoose");
 
-const memorySchema = new mongoose.Schema({
-  capsuleId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Capsule"
+const memorySchema = new mongoose.Schema(
+  {
+    capsuleId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Capsule",
+      required: true,
+    },
+
+    type: {
+      type: String,
+      enum: ["text", "image", "audio", "video"],
+      required: true,
+    },
+
+    content: {
+      type: String,
+      required: true,
+    },
+
+    caption: {
+      type: String,
+      default: "",
+    },
+
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
   },
-
-  type: {
-    type: String,
-    enum: ["text", "image", "audio", "video"]
-  },
-
-  content: String,
-
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User"
-  }
-}, { timestamps: true });
+  { timestamps: true }
+);
 
 module.exports = mongoose.model("Memory", memorySchema);
