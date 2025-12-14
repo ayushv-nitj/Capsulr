@@ -1,6 +1,8 @@
 const express = require("express");
 const Capsule = require("../models/capsule");
 const jwt = require("jsonwebtoken");
+const User = require("../models/User");
+const { sendEmail } = require("../utils/mailer");
 
 const router = express.Router();
 
@@ -62,21 +64,43 @@ router.get("/", auth, async (req, res) => {
   }
 });
 
-// GET USER CAPSULES
+// GET SINGLE CAPSULE (with collaborators populated)
 router.get("/:id", auth, async (req, res) => {
-  const capsule = await Capsule.findById(req.params.id);
+  try {
+    const capsule = await Capsule.findById(req.params.id)
+      .populate("contributors", "name email profileImage")
+      .populate("owner", "name email profileImage");
+    if (!capsule) {
+      return res.status(404).json({ message: "Capsule not found" });
+    }
 
-  if (!capsule) {
-    return res.status(404).json({ message: "Capsule not found" });
+    // 🔐 Auto-unlock when time passes
+    if (capsule.isLocked && capsule.unlockAt && now >= capsule.unlockAt) {
+  capsule.isLocked = false;
+  capsule.isUnlocked = true;
+  await capsule.save();
+
+  // 📧 EMAIL RECIPIENTS
+  if (capsule.recipients?.length) {
+    for (const email of capsule.recipients) {
+      await sendEmail({
+        to: email,
+        subject: "A Capsule has unlocked 🎉",
+        html: `
+          <h2>A Capsule is now available</h2>
+          <p><b>${capsule.title}</b> has unlocked.</p>
+          <p>Log in to Capsulr to view it.</p>
+        `
+      });
+    }
   }
+}
 
-  // 🔐 Auto unlock when time passes
-  if (capsule.isLocked && capsule.unlockAt && new Date() >= capsule.unlockAt) {
-    capsule.isLocked = false;
-    await capsule.save();
+
+    res.json(capsule);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch capsule" });
   }
-
-  res.json(capsule);
 });
 
 // UPDATE CAPSULE
@@ -125,6 +149,49 @@ router.delete("/:id", auth, async (req, res) => {
     res.status(500).json({ message: "Delete failed" });
   }
 });
+
+// ADD COLLABORATOR BY EMAIL
+router.post("/:id/collaborators", auth, async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const capsule = await Capsule.findById(req.params.id);
+    if (!capsule) return res.status(404).json({ message: "Capsule not found" });
+
+    if (capsule.owner.toString() !== req.userId) {
+      return res.status(403).json({ message: "Only owner can add collaborators" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (capsule.contributors.includes(user._id)) {
+      return res.status(400).json({ message: "Already a collaborator" });
+    }
+
+    capsule.contributors.push(user._id);
+    await capsule.save();
+
+    // 📧 SEND EMAIL
+    await sendEmail({
+      to: user.email,
+      subject: `You were invited to a Capsule`,
+      html: `
+        <h2>You've been invited 🎁</h2>
+        <p>You are now a collaborator on capsule:</p>
+        <b>${capsule.title}</b>
+        <p>Login to Capsulr to view and contribute.</p>
+      `
+    });
+
+    res.json({ message: "Collaborator added & email sent" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to add collaborator" });
+  }
+});
+
+
+
 
 
 

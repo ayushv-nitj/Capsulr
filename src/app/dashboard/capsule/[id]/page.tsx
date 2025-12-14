@@ -5,6 +5,8 @@ import "react-quill-new/dist/quill.snow.css";
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { getAvatarUrl } from "@/lib/avatar";
+
 
 /* -------------------- Quill Setup -------------------- */
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
@@ -28,13 +30,32 @@ type Memory = {
   createdAt?: string;
 };
 
+type Collaborator = {
+  _id: string;
+  name: string;
+  email: string;
+  profileImage?: string;
+};
+
+
+type UserMini = {
+  _id: string;
+  name: string;
+  email: string;
+  profileImage?: string;
+};
+
 type Capsule = {
   _id: string;
   title?: string;
   theme?: string;
   unlockAt?: string;
   isLocked?: boolean;
+  owner?: UserMini;
+  contributors?: UserMini[];
 };
+
+
 
 type TimeLeft = { days: number; hours: number; minutes: number; seconds: number } | null;
 
@@ -72,6 +93,13 @@ export default function CapsulePage() {
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [error, setError] = useState("");
 
+const [recipientEmail, setRecipientEmail] = useState("");
+const [recipients, setRecipients] = useState<string[]>([]);
+
+  const [collabEmail, setCollabEmail] = useState("");
+const [addingCollab, setAddingCollab] = useState(false);
+ 
+
   const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(null);
 
   const token =
@@ -84,10 +112,15 @@ export default function CapsulePage() {
     });
 if (res.ok) {
   const data = await res.json();
+
+  console.log("CAPSULE:", capsule);
+
   setCapsule({
     ...data,
     isLocked: data.isLocked ?? false, // 👈 default safety
   });
+
+    setRecipients(data.recipients || []);
 }
   };
 
@@ -121,6 +154,26 @@ if (res.ok) {
   return () => clearInterval(interval);
 }, [capsule?.unlockAt, capsule?.isLocked]);
 
+const addCollaborator = async () => {
+  if (!collabEmail.trim()) return;
+
+  setAddingCollab(true);
+  try {
+    await fetch(`http://localhost:5000/api/capsules/${id}/collaborators`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: token || "",
+      },
+      body: JSON.stringify({ email: collabEmail }),
+    });
+
+    setCollabEmail("");
+    await fetchCapsule(); // refresh capsule data
+  } finally {
+    setAddingCollab(false);
+  }
+};
 
   /* -------------------- Media Preview -------------------- */
   useEffect(() => {
@@ -197,6 +250,41 @@ if (res.ok) {
     await fetchMemories();
   };
 
+
+
+const addRecipient = () => {
+  if (!recipientEmail.trim()) return;
+  if (recipients.includes(recipientEmail)) return;
+
+  setRecipients([...recipients, recipientEmail]);
+  setRecipientEmail("");
+};
+
+const removeRecipient = (email: string) => {
+  setRecipients(recipients.filter(r => r !== email));
+};
+
+const saveRecipients = async () => {
+  await fetch(`http://localhost:5000/api/capsules/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: token || ""
+    },
+    body: JSON.stringify({ recipients })
+  });
+
+  alert("Recipients saved");
+};
+
+  //  Prevent rendering before capsule loads
+if (!capsule) {
+  return (
+    <div className="p-10 text-center text-gray-400">
+      Loading capsule…
+    </div>
+  );
+}
   /* -------------------- UI -------------------- */
   return (
     <div className="p-6 max-w-3xl mx-auto">
@@ -213,6 +301,154 @@ if (res.ok) {
           Memories: {memories.length}
         </span>
       </div>
+
+{/* 👑 Admin + 👥 Collaborators */}
+<div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+  {/* 👑 Admin */}
+  {capsule?.owner && (
+    <div className="bg-white p-4 rounded-xl shadow">
+      <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+        👑 Admin
+      </h4>
+
+      <div className="flex items-center gap-4">
+        <img
+          src={
+            capsule.owner.profileImage ||
+            getAvatarUrl(capsule.owner.email)
+          }
+          className="w-12 h-12 rounded-full border object-cover"
+        />
+
+        <div>
+          <p className="text-sm font-semibold text-gray-900">
+            {capsule.owner.name}
+          </p>
+          <p className="text-xs text-gray-500">
+            {capsule.owner.email}
+          </p>
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* 👥 Collaborators */}
+  <div className="bg-white p-4 rounded-xl shadow">
+    <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+      👥 Collaborators
+    </h4>
+
+    {capsule?.contributors?.length ? (
+      <div className="space-y-3">
+        {capsule.contributors.map((u) => (
+          <div key={u._id} className="flex items-center gap-4">
+            <img
+              src={u.profileImage || getAvatarUrl(u.email)}
+              className="w-10 h-10 rounded-full border object-cover"
+            />
+
+            <div>
+              <p className="text-sm font-medium text-gray-900">
+                {u.name}
+              </p>
+              <p className="text-xs text-gray-500">
+                {u.email}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <p className="text-sm text-gray-400">
+        No collaborators yet
+      </p>
+    )}
+  </div>
+
+</div>
+
+   {/* Add Collaborator (Owner only) */}
+{capsule && (
+  <div className="mb-6 bg-white p-4 rounded-xl shadow">
+    <h4 className="text-sm font-semibold text-gray-700 mb-2">
+      Add collaborator
+    </h4>
+
+    <div className="flex gap-2">
+      <input
+        type="email"
+        placeholder="Collaborator email"
+        value={collabEmail}
+        onChange={(e) => setCollabEmail(e.target.value)}
+        className="flex-1 px-3 py-2 border rounded-lg text-sm text-gray-900"
+      />
+
+      <button
+        onClick={addCollaborator}
+        disabled={addingCollab}
+        className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm"
+      >
+        {addingCollab ? "Adding…" : "Add"}
+      </button>
+    </div>
+  </div>
+)}
+
+
+{/* 📧 Recipients */}
+{capsule && capsule.owner === undefined && (
+  <div className="mb-6 bg-white p-4 rounded-xl shadow">
+    <h4 className="text-sm font-semibold text-gray-700 mb-2">
+      Recipients (will be notified on unlock)
+    </h4>
+
+    <div className="flex gap-2 mb-3">
+      <input
+        type="email"
+        placeholder="Recipient email"
+        value={recipientEmail}
+        onChange={(e) => setRecipientEmail(e.target.value)}
+        className="flex-1 px-3 py-2 border rounded-lg text-sm text-gray-900"
+      />
+
+      <button
+        onClick={addRecipient}
+        className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm"
+      >
+        Add
+      </button>
+    </div>
+
+    {/* Recipient list */}
+    <div className="flex flex-wrap gap-2">
+      {recipients.map((email) => (
+        <span
+          key={email}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 text-sm"
+        >
+          {email}
+          <button
+            onClick={() => removeRecipient(email)}
+            className="text-red-500 hover:text-red-700"
+          >
+            ✕
+          </button>
+        </span>
+      ))}
+    </div>
+
+    <button
+      onClick={saveRecipients}
+      className="mt-4 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm"
+    >
+      Save Recipients
+    </button>
+  </div>
+)}
+
+
+
 
       {/* Composer */}
       {!capsule?.isLocked && (

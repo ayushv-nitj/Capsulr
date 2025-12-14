@@ -35,4 +35,4 @@ const capsuleSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-module.exports = mongoose.model("capsule", capsuleSchema);
+module.exports = mongoose.model("Capsule", capsuleSchema);
