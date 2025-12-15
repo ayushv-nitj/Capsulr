@@ -5,6 +5,14 @@
 > *“Some memories deserve to be opened later.”*
 
 ---
+Welcome to Capsulr![WhatsApp Image 2025-12-15 at 11 37 51_2ee43d61](https://github.com/user-attachments/assets/54573263-8d20-4889-82a8-7ffd63f8d95d)
+<img width="929" height="934" alt="image" src="https://github.com/user-attachments/assets/8e801dd6-dde0-4cc8-837b-6386fe21531b" />
+<img width="1400" height="970" alt="image" src="https://github.com/user-attachments/assets/e9e7ea25-4982-4bda-8b29-4c84f840319a" />
+<img width="1888" height="977" alt="image" src="https://github.com/user-attachments/assets/3baf1e7d-307a-4099-bc34-3183a3eda29c" />
+
+
+
+
 
 # Running Locally
 ## Backend 
