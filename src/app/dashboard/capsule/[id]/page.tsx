@@ -299,7 +299,7 @@ const fetchCommentsForMemory = async (memoryId: string) => {
 
     setAdding(true);
     try {
-      await fetch("http://localhost:5000/api/memories", {
+      await fetch(`${API_URL}/api/memories`), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

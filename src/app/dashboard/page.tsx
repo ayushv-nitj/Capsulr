@@ -1,4 +1,5 @@
 "use client";
+import { API_URL } from "@/lib/api";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -59,7 +60,7 @@ function getTimeLeft(unlockAt: string) {
     const fetchCapsules = async () => {
       const token = localStorage.getItem("token");
 
-      const res = await fetch("http://localhost:5000/api/capsules", {
+      const res = await fetch(`${API_URL}/api/capsules`), {
         headers: {
           Authorization: token || "",
         },
