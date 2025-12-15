@@ -1,4 +1,5 @@
 "use client";
+import { API_URL } from "@/lib/api";
 
 import dynamic from "next/dynamic";
 import "react-quill-new/dist/quill.snow.css";
@@ -299,7 +300,7 @@ const fetchCommentsForMemory = async (memoryId: string) => {
 
     setAdding(true);
     try {
-      await fetch(`${API_URL}/api/memories`), {
+      await fetch(`${API_URL}/api/memories`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

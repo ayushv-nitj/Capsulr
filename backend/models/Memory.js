@@ -33,4 +33,6 @@ const memorySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Memory", memorySchema);
+module.exports =
+  mongoose.models.Memory ||
+  mongoose.model("Memory", memorySchema);

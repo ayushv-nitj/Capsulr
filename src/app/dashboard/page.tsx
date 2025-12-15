@@ -60,7 +60,7 @@ function getTimeLeft(unlockAt: string) {
     const fetchCapsules = async () => {
       const token = localStorage.getItem("token");
 
-      const res = await fetch(`${API_URL}/api/capsules`), {
+      const res = await fetch(`${API_URL}/api/capsules`, {
         headers: {
           Authorization: token || "",
         },
