@@ -9,6 +9,7 @@ Welcome to Capsulr![WhatsApp Image 2025-12-15 at 11 37 51_2ee43d61](https://gith
 <img width="929" height="934" alt="image" src="https://github.com/user-attachments/assets/8e801dd6-dde0-4cc8-837b-6386fe21531b" />
 <img width="1400" height="970" alt="image" src="https://github.com/user-attachments/assets/e9e7ea25-4982-4bda-8b29-4c84f840319a" />
 <img width="1888" height="977" alt="image" src="https://github.com/user-attachments/assets/3baf1e7d-307a-4099-bc34-3183a3eda29c" />
+<img width="1033" height="675" alt="image" src="https://github.com/user-attachments/assets/5a560e25-8284-4fde-a763-91bc1fe74f89" />
 
 
 
