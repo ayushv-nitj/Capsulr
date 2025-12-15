@@ -2,7 +2,7 @@ const fs = require("fs");
 
 const express = require("express");
 const jwt = require("jsonwebtoken");
-const Memory = require("../models/memory");
+const Memory = require("../models/Memory");
 const multer = require("multer");
 const cloudinary = require("../config/cloudinary");
 

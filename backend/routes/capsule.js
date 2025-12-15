@@ -1,5 +1,5 @@
 const express = require("express");
-const Capsule = require("../models/capsule");
+const Capsule = require("../models/Capsule");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const { sendEmail } = require("../utils/mailer");
@@ -315,7 +315,7 @@ router.get("/recipient/:capsuleId/:email/memories", async (req, res) => {
       return res.json([]);
     }
 
-    const Memory = require("../models/memory");
+    const Memory = require("../models/Memory");
     const memories = await Memory.find({ capsuleId });
     res.json(memories);
   } catch (err) {

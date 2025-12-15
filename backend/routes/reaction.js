@@ -1,7 +1,7 @@
 const express = require("express");
 const Reaction = require("../models/Reaction");
-const Memory = require("../models/memory");
-const Capsule = require("../models/capsule");
+const Memory = require("../models/Memory");
+const Capsule = require("../models/Capsule");
 
 const router = express.Router();
 
