@@ -6,12 +6,18 @@ import { motion, useInView, useScroll, useTransform } from "framer-motion";
 
 export default function LandingPage() {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { scrollYProgress } = useScroll();
 
   // Parallax effects
   const heroY = useTransform(scrollYProgress, [0, 1], [0, -200]);
   const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
+
+  // Client-side mount check
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Detect scroll for navbar
   useEffect(() => {
@@ -22,11 +28,16 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Prevent hydration mismatch
+  if (!mounted) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 text-white overflow-hidden">
       {/* Animated Background */}
       <div className="fixed inset-0 z-0">
-        <div className="absolute inset-0 bg-linear-to-br from-slate-950 via-purple-950 to-slate-950"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950"></div>
         <div className="absolute inset-0 opacity-30">
           <div className="absolute top-0 -left-4 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>
           <div className="absolute top-0 -right-4 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000"></div>
@@ -47,7 +58,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <motion.h1
             whileHover={{ scale: 1.05 }}
-            className="text-2xl font-bold bg-linear-to-r from-indigo-400 via-purple-400 to-pink-400 text-transparent bg-clip-text"
+            className="text-2xl font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 text-transparent bg-clip-text"
           >
             Capsulr
           </motion.h1>
@@ -65,7 +76,7 @@ export default function LandingPage() {
               whileHover={{ scale: 1.05, boxShadow: "0 0 30px rgba(139, 92, 246, 0.5)" }}
               whileTap={{ scale: 0.95 }}
               onClick={() => router.push("/register")}
-              className="px-6 py-2 bg-linear-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-full shadow-lg hover:shadow-purple-500/50 transition-all"
+              className="px-6 py-2 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-full shadow-lg hover:shadow-purple-500/50 transition-all"
             >
               Get Started
             </motion.button>
@@ -96,7 +107,7 @@ export default function LandingPage() {
             transition={{ delay: 0.3 }}
             className="text-7xl md:text-8xl lg:text-9xl font-extrabold mb-6 leading-tight"
           >
-            <span className="bg-linear-to-r from-indigo-400 via-purple-400 to-pink-400 text-transparent bg-clip-text">
+            <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 text-transparent bg-clip-text">
               Capsulr
             </span>
           </motion.h2>
@@ -124,10 +135,10 @@ export default function LandingPage() {
             }}
             whileTap={{ scale: 0.95 }}
             onClick={() => router.push("/register")}
-            className="px-10 py-5 bg-linear-to-r from-indigo-600 via-purple-600 to-pink-600 text-white text-lg font-semibold rounded-full shadow-2xl hover:shadow-purple-500/50 transition-all relative group"
+            className="px-10 py-5 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white text-lg font-semibold rounded-full shadow-2xl hover:shadow-purple-500/50 transition-all relative group"
           >
             <span className="relative z-10">Start Creating Capsules →</span>
-            <div className="absolute inset-0 rounded-full bg-linear-to-r from-indigo-400 via-purple-400 to-pink-400 opacity-0 group-hover:opacity-100 blur transition-opacity"></div>
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 opacity-0 group-hover:opacity-100 blur transition-opacity"></div>
           </motion.button>
 
           {/* 3D Capsule Card Preview */}
@@ -137,11 +148,11 @@ export default function LandingPage() {
             transition={{ delay: 0.9, type: "spring" }}
             className="mt-20 relative perspective-1000"
           >
-            <div className="relative bg-linear-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl rounded-3xl shadow-2xl p-8 max-w-2xl mx-auto border border-white/10 transform-gpu hover:scale-105 transition-transform duration-500">
-              <div className="absolute inset-0 bg-linear-to-r from-purple-500/10 to-pink-500/10 rounded-3xl blur-xl"></div>
+            <div className="relative bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl rounded-3xl shadow-2xl p-8 max-w-2xl mx-auto border border-white/10 transform-gpu hover:scale-105 transition-transform duration-500">
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-3xl blur-xl"></div>
 
               <div className="relative flex items-center gap-4 mb-4">
-                <div className="w-16 h-16 bg-linear-to-r from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center text-3xl shadow-lg">
+                <div className="w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center text-3xl shadow-lg">
                   🎁
                 </div>
                 <div className="text-left flex-1">
@@ -169,7 +180,7 @@ export default function LandingPage() {
                   {[1, 2, 3].map((i) => (
                     <div
                       key={i}
-                      className="w-8 h-8 rounded-full bg-linear-to-br from-indigo-400 to-purple-400 border-2 border-slate-900"
+                      className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 border-2 border-slate-900"
                     ></div>
                   ))}
                 </div>
@@ -204,7 +215,7 @@ export default function LandingPage() {
           <FadeInSection>
             <h3 className="text-5xl font-bold text-center mb-4">
               What You Can Do with{" "}
-              <span className="bg-linear-to-r from-indigo-400 to-purple-400 text-transparent bg-clip-text">
+              <span className="bg-gradient-to-r from-indigo-400 to-purple-400 text-transparent bg-clip-text">
                 Capsulr
               </span>
             </h3>
@@ -250,7 +261,7 @@ export default function LandingPage() {
                 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => router.push("/register")}
-                className="px-10 py-5 bg-linear-to-r from-indigo-600 via-purple-600 to-pink-600 text-white text-lg font-semibold rounded-full shadow-2xl hover:shadow-purple-500/50 transition-all"
+                className="px-10 py-5 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white text-lg font-semibold rounded-full shadow-2xl hover:shadow-purple-500/50 transition-all"
               >
                 Start Your Journey Now →
               </motion.button>
@@ -286,9 +297,9 @@ export default function LandingPage() {
                 <motion.div
                   key={index}
                   whileHover={{ scale: 1.05, y: -5 }}
-                  className="text-center p-8 bg-linear-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10"
+                  className="text-center p-8 bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10"
                 >
-                  <div className="text-5xl font-bold bg-linear-to-r from-indigo-400 to-purple-400 text-transparent bg-clip-text mb-2">
+                  <div className="text-5xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 text-transparent bg-clip-text mb-2">
                     {stat.value}
                   </div>
                   <p className="text-gray-400">{stat.label}</p>
@@ -306,12 +317,12 @@ export default function LandingPage() {
 
               <motion.div
                 whileHover={{ scale: 1.02 }}
-                className="bg-linear-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl rounded-3xl p-10 border border-white/10 shadow-2xl"
+                className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl rounded-3xl p-10 border border-white/10 shadow-2xl"
               >
                 <div className="flex flex-col md:flex-row items-center gap-8">
                   {/* Avatar */}
                   <div className="shrink-0">
-                    <div className="w-32 h-32 rounded-full bg-linear-to-br from-indigo-500 to-purple-500 p-1">
+                    <div className="w-32 h-32 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 p-1">
                       <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center text-6xl">
                         👨‍💻
                       </div>
@@ -365,7 +376,7 @@ export default function LandingPage() {
       {/* FOOTER */}
       <footer className="relative bg-slate-900/50 backdrop-blur-xl border-t border-white/10 py-12 px-6 z-10">
         <div className="max-w-6xl mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-4 bg-linear-to-r from-indigo-400 via-purple-400 to-pink-400 text-transparent bg-clip-text">
+          <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 text-transparent bg-clip-text">
             Capsulr
           </h2>
           <p className="text-gray-400 mb-6">
@@ -446,9 +457,9 @@ function FeatureCard({ feature, index }: { feature: any; index: number }) {
       animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
       whileHover={{ y: -10, scale: 1.02 }}
-      className="group relative bg-linear-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/10 hover:border-purple-500/50 transition-all duration-300"
+      className="group relative bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/10 hover:border-purple-500/50 transition-all duration-300"
     >
-      <div className="absolute inset-0 bg-linear-to-r from-purple-500/5 to-pink-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+      <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-pink-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
       <div className={`relative w-16 h-16 ${feature.gradient} rounded-2xl flex items-center justify-center text-4xl mb-6 shadow-lg group-hover:scale-110 transition-transform`}>
         {feature.icon}
@@ -480,7 +491,7 @@ function StepCard({ step, index }: { step: any; index: number }) {
     >
       <motion.div
         whileHover={{ scale: 1.05, rotate: 2 }}
-        className="shrink-0 w-20 h-20 bg-linear-to-br from-indigo-600 to-purple-600 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-2xl shadow-purple-500/50"
+        className="shrink-0 w-20 h-20 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-2xl shadow-purple-500/50"
       >
         {step.number}
       </motion.div>
@@ -509,37 +520,37 @@ const features = [
     icon: "⏰",
     title: "Time-Locked Capsules",
     description: "Set a future date to unlock your memories. Perfect for birthdays, anniversaries, or special milestones.",
-    gradient: "bg-linear-to-r from-blue-500 to-cyan-500"
+    gradient: "bg-gradient-to-r from-blue-500 to-cyan-500"
   },
   {
     icon: "🖼️",
     title: "Rich Media Support",
     description: "Add photos, videos, audio messages, and formatted text to create vibrant, multimedia memories.",
-    gradient: "bg-linear-to-r from-purple-500 to-pink-500"
+    gradient: "bg-gradient-to-r from-purple-500 to-pink-500"
   },
   {
     icon: "👥",
     title: "Collaborative Capsules",
     description: "Invite friends and family to contribute their own memories to shared capsules.",
-    gradient: "bg-linear-to-r from-orange-500 to-red-500"
+    gradient: "bg-gradient-to-r from-orange-500 to-red-500"
   },
   {
     icon: "📧",
     title: "Email Notifications",
     description: "Recipients get notified when capsules unlock, ensuring no special moment is missed.",
-    gradient: "bg-linear-to-r from-green-500 to-emerald-500"
+    gradient: "bg-gradient-to-r from-green-500 to-emerald-500"
   },
   {
     icon: "🎨",
     title: "Custom Themes",
     description: "Personalize each capsule with custom themes to match the occasion and mood.",
-    gradient: "bg-linear-to-r from-indigo-500 to-blue-500"
+    gradient: "bg-gradient-to-r from-indigo-500 to-blue-500"
   },
   {
     icon: "🔒",
     title: "Secure & Private",
     description: "Your memories are encrypted and stored securely. Only you and your chosen recipients can access them.",
-    gradient: "bg-linear-to-r from-pink-500 to-rose-500"
+    gradient: "bg-gradient-to-r from-pink-500 to-rose-500"
   }
 ];
 
@@ -549,28 +560,28 @@ const steps = [
     title: "Create Your Account",
     description: "Sign up with your email in just seconds. No credit card required. Start preserving memories immediately.",
     icon: "📝",
-    gradient: "bg-linear-to-br from-indigo-900/30 to-purple-900/30 backdrop-blur-xl"
+    gradient: "bg-gradient-to-br from-indigo-900/30 to-purple-900/30 backdrop-blur-xl"
   },
   {
     number: 2,
     title: "Create a Capsule",
     description: "Give your capsule a name, choose a theme, and set when it should unlock. You can always edit these details later.",
     icon: "🎁",
-    gradient: "bg-linear-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-xl"
+    gradient: "bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-xl"
   },
   {
     number: 3,
     title: "Add Memories",
     description: "Upload photos, videos, audio messages, or write text entries. Invite collaborators to contribute their memories too.",
     icon: "📸",
-    gradient: "bg-linear-to-br from-pink-900/30 to-rose-900/30 backdrop-blur-xl"
+    gradient: "bg-gradient-to-br from-pink-900/30 to-rose-900/30 backdrop-blur-xl"
   },
   {
     number: 4,
     title: "Wait for the Magic",
     description: "Your capsule will automatically unlock on the date you set. Recipients will be notified via email to relive the memories.",
     icon: "✨",
-    gradient: "bg-linear-to-br from-orange-900/30 to-red-900/30 backdrop-blur-xl"
+    gradient: "bg-gradient-to-br from-orange-900/30 to-red-900/30 backdrop-blur-xl"
   }
 ];
 

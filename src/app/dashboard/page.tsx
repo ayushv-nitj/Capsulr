@@ -23,18 +23,20 @@ export default function Dashboard() {
     return () => clearInterval(id);
   }, []);
 
-  function getTimeLeft(unlockAt: string) {
-    const diff = +new Date(unlockAt) - +new Date();
-    if (diff <= 0) return null;
+function getTimeLeft(unlockAt: string) {
+  const unlockTime = new Date(unlockAt).getTime();
+  const now = Date.now();
+  const diff = unlockTime - now;
+  
+  if (diff <= 0) return null;
 
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-    const minutes = Math.floor((diff / (1000 * 60)) % 60);
-    const seconds = Math.floor((diff / 1000) % 60);
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+  const minutes = Math.floor((diff / (1000 * 60)) % 60);
+  const seconds = Math.floor((diff / 1000) % 60);
 
-    return { days, hours, minutes, seconds };
-  }
-
+  return { days, hours, minutes, seconds };
+}
   const logout = () => {
     localStorage.removeItem("token");
     router.push("/login");
@@ -93,7 +95,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-slate-950 text-white">
       {/* Animated Background */}
       <div className="fixed inset-0 z-0">
-        <div className="absolute inset-0 bg-linear-to-br from-slate-950 via-purple-950 to-slate-950"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950"></div>
         <div className="absolute inset-0 opacity-20">
           <div className="absolute top-0 -left-4 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>
           <div className="absolute top-0 -right-4 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000"></div>
@@ -111,7 +113,7 @@ export default function Dashboard() {
         >
           <div className="bg-slate-900/50 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
             {/* Top Section */}
-            <div className="bg-linear-to-r from-indigo-600 via-purple-600 to-pink-600 p-6">
+            <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-6">
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                 {/* Left: Profile & Branding */}
                 <div className="flex items-center gap-4">
@@ -126,7 +128,7 @@ export default function Dashboard() {
                         alt="Profile"
                         className="w-16 h-16 rounded-full border-4 border-white/30 shadow-lg object-cover"
                       />
-                      <div className="absolute inset-0 rounded-full bg-linear-to-br from-purple-400/20 to-pink-400/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-br from-purple-400/20 to-pink-400/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     </motion.div>
                   </Link>
 
@@ -199,7 +201,7 @@ export default function Dashboard() {
                       onClick={() => setFilterStatus(status as any)}
                       className={`px-6 py-3 rounded-xl font-medium transition-all ${
                         filterStatus === status
-                          ? "bg-linear-to-r from-purple-600 to-pink-600 text-white shadow-lg"
+                          ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg"
                           : "bg-slate-800/50 text-gray-300 hover:bg-slate-700/50 border border-white/10"
                       }`}
                     >
@@ -248,7 +250,7 @@ export default function Dashboard() {
             animate={{ opacity: 1, scale: 1 }}
             className="text-center py-20"
           >
-            <div className="w-32 h-32 mx-auto mb-6 bg-linear-to-br from-purple-500/20 to-pink-500/20 rounded-full flex items-center justify-center text-6xl">
+            <div className="w-32 h-32 mx-auto mb-6 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full flex items-center justify-center text-6xl">
               📭
             </div>
             <h3 className="text-2xl font-bold mb-2">No capsules found</h3>
@@ -259,7 +261,7 @@ export default function Dashboard() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => router.push("/dashboard/create")}
-              className="px-6 py-3 bg-linear-to-r from-purple-600 to-pink-600 rounded-full font-semibold shadow-lg"
+              className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full font-semibold shadow-lg"
             >
               Create Your First Capsule
             </motion.button>
@@ -296,7 +298,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <style jsx global>{`
+      {/* <style jsx global>{`
         @keyframes blob {
           0%, 100% { transform: translate(0, 0) scale(1); }
           33% { transform: translate(30px, -50px) scale(1.1); }
@@ -311,7 +313,7 @@ export default function Dashboard() {
         .animation-delay-4000 {
           animation-delay: 4s;
         }
-      `}</style>
+      `}</style> */}
     </div>
   );
 }
@@ -335,7 +337,7 @@ function StatsCard({
       className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-6 shadow-xl"
     >
       <div className="flex items-center gap-4">
-        <div className={`w-14 h-14 bg-linear-to-br ${gradient} rounded-xl flex items-center justify-center text-3xl shadow-lg`}>
+        <div className={`w-14 h-14 bg-gradient-to-br ${gradient} rounded-xl flex items-center justify-center text-3xl shadow-lg`}>
           {icon}
         </div>
         <div>
@@ -381,7 +383,7 @@ function CapsuleCard({
       className="group relative rounded-2xl overflow-hidden cursor-pointer shadow-xl hover:shadow-2xl transition-all"
     >
       {/* Gradient Background */}
-      <div className={`absolute inset-0 bg-linear-to-br ${gradient} opacity-90 group-hover:opacity-100 transition-opacity`} />
+      <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-90 group-hover:opacity-100 transition-opacity`} />
 
       {/* Content */}
       <div className="relative p-6 bg-slate-900/40 backdrop-blur-sm min-h-70 flex flex-col justify-between">
@@ -471,7 +473,7 @@ function CapsuleCard({
       </div>
 
       {/* Hover Glow */}
-      <div className="absolute inset-0 bg-linear-to-t from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+      <div className="absolute inset-0 bg-gradient-to-t from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
     </motion.div>
   );
 }

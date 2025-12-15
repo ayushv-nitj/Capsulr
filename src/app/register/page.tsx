@@ -54,7 +54,7 @@ export default function Register() {
     <div className="min-h-screen bg-slate-950 flex items-center justify-center px-6 py-12 relative overflow-hidden">
       {/* Animated Background */}
       <div className="fixed inset-0 z-0">
-        <div className="absolute inset-0 bg-linear-to-br from-slate-950 via-purple-950 to-slate-950"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950"></div>
         <div className="absolute inset-0 opacity-30">
           <div className="absolute top-0 -left-4 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>
           <div className="absolute top-0 -right-4 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000"></div>
@@ -94,7 +94,7 @@ export default function Register() {
         className="relative w-full max-w-md z-10"
       >
         {/* Glow Effect */}
-        <div className="absolute inset-0 bg-linear-to-r from-indigo-500/20 to-pink-500/20 rounded-3xl blur-2xl"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-pink-500/20 rounded-3xl blur-2xl"></div>
 
         {/* Card */}
         <div className="relative bg-slate-900/50 backdrop-blur-xl p-8 md:p-10 rounded-3xl border border-white/10 shadow-2xl">
@@ -105,7 +105,7 @@ export default function Register() {
             transition={{ delay: 0.2 }}
             className="text-center mb-8"
           >
-            <h1 className="text-4xl md:text-5xl font-extrabold bg-linear-to-r from-indigo-400 via-purple-400 to-pink-400 text-transparent bg-clip-text mb-2">
+            <h1 className="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 text-transparent bg-clip-text mb-2">
               Join Capsulr
             </h1>
             <p className="text-gray-400">
@@ -192,7 +192,7 @@ export default function Register() {
               whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 rounded-xl bg-linear-to-r from-indigo-600 via-purple-600 to-pink-600 text-white font-semibold shadow-lg hover:shadow-purple-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white font-semibold shadow-lg hover:shadow-purple-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
             >
               <span className="relative z-10 flex items-center justify-center gap-2">
                 {loading && (
@@ -219,7 +219,7 @@ export default function Register() {
                 )}
                 {loading ? "Creating Account..." : "Create Account"}
               </span>
-              <div className="absolute inset-0 bg-linear-to-r from-indigo-400 via-purple-400 to-pink-400 opacity-0 group-hover:opacity-20 transition-opacity"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 opacity-0 group-hover:opacity-20 transition-opacity"></div>
             </motion.button>
           </form>
 

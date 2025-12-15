@@ -6,14 +6,24 @@ require("dotenv").config();
 
 const app = express();
 
-app.use(cors());
+// const cors = require("cors");
+
+app.use(cors({
+  origin: [
+    "http://localhost:3000",
+    "https://your-vercel-app.vercel.app"
+  ],
+  credentials: true
+}));
+
 app.use(express.json());
 
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/user", require("./routes/user"));
 app.use("/api/capsules", require("./routes/capsule"));
 app.use("/api/memories", require("./routes/memory"));
-
+app.use("/api/reactions", require("./routes/reaction"));
+app.use("/api/comments", require("./routes/comment"));
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))
@@ -22,3 +32,36 @@ mongoose.connect(process.env.MONGO_URI)
 app.listen(5000, () => {
   console.log("Server running on port 5000");
 });
+
+// Auto-unlock capsules every minute
+setInterval(async () => {
+  const Capsule = require("./models/capsule");
+  const { sendEmail } = require("./utils/mailer");
+  
+  const now = new Date();
+  const capsulestoUnlock = await Capsule.find({
+    isLocked: true,
+    unlockAt: { $lte: now }
+  });
+
+  for (const capsule of capsulestoUnlock) {
+    capsule.isLocked = false;
+    capsule.isUnlocked = true;
+    await capsule.save();
+
+    // Email all recipients
+    if (capsule.recipients?.length) {
+      for (const email of capsule.recipients) {
+        await sendEmail({
+          to: email,
+          subject: "🎉 A Time Capsule has unlocked!",
+          html: `
+            <h2>Your capsule is ready!</h2>
+            <p><b>${capsule.title}</b> has unlocked.</p>
+            <p><a href="http://localhost:3000/recipient/${capsule._id}/${email}">View Capsule</a></p>
+          `
+        });
+      }
+    }
+  }
+}, 60000); // Check every minute

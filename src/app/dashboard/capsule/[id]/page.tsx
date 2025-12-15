@@ -6,9 +6,8 @@ import "react-quill-new/dist/quill.snow.css";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getAvatarUrl } from "@/lib/avatar";
+import { motion, AnimatePresence } from "framer-motion";
 
-
-/* -------------------- Quill Setup -------------------- */
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 
 const quillModules = {
@@ -21,7 +20,6 @@ const quillModules = {
   ],
 };
 
-/* -------------------- Types -------------------- */
 type Memory = {
   _id: string;
   type: "text" | "image" | "audio" | "video";
@@ -36,7 +34,6 @@ type Collaborator = {
   email: string;
   profileImage?: string;
 };
-
 
 type UserMini = {
   _id: string;
@@ -53,26 +50,43 @@ type Capsule = {
   isLocked?: boolean;
   owner?: UserMini;
   contributors?: UserMini[];
+  recipients?: string[];
 };
 
+type Reaction = {
+  _id: string;
+  emoji: string;
+  userName: string;
+  userEmail: string;
+};
 
+type Comment = {
+  _id: string;
+  text: string;
+  userName: string;
+  userEmail: string;
+  createdAt: string;
+};
 
-type TimeLeft = { days: number; hours: number; minutes: number; seconds: number } | null;
+type TimeLeft = {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+} | null;
 
-/* -------------------- Helper Functions -------------------- */
-// helper returns days/hours/minutes/seconds or null if passed
-function getTimeLeft(unlockAt?: string): TimeLeft {
-  if (!unlockAt) return null;
-  const diff = +new Date(unlockAt) - Date.now();
+function getTimeLeft(unlockAt: string): TimeLeft {
+  const diff = +new Date(unlockAt) - +new Date();
   if (diff <= 0) return null;
+
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
   const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
   const minutes = Math.floor((diff / (1000 * 60)) % 60);
   const seconds = Math.floor((diff / 1000) % 60);
+
   return { days, hours, minutes, seconds };
 }
 
-/* -------------------- Component -------------------- */
 export default function CapsulePage() {
   const { id } = useParams();
   const router = useRouter();
@@ -92,39 +106,41 @@ export default function CapsulePage() {
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [error, setError] = useState("");
 
-const [recipientEmail, setRecipientEmail] = useState("");
-const [recipients, setRecipients] = useState<string[]>([]);
+  const [recipientEmail, setRecipientEmail] = useState("");
+  const [recipients, setRecipients] = useState<string[]>([]);
 
   const [collabEmail, setCollabEmail] = useState("");
-const [addingCollab, setAddingCollab] = useState(false);
- 
+  const [addingCollab, setAddingCollab] = useState(false);
 
   const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(null);
 
-  // avoid reading browser-only APIs during SSR
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [isClient, setIsClient] = useState(false);
+  // Reactions & Comments state
+  const [memoryReactions, setMemoryReactions] = useState<{ [key: string]: Reaction[] }>({});
+  const [memoryComments, setMemoryComments] = useState<{ [key: string]: Comment[] }>({});
+  const [commentText, setCommentText] = useState<{ [key: string]: string }>({});
 
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const currentUserId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+  const currentUserName = typeof window !== "undefined" ? localStorage.getItem("name") : null;
+  const currentUserEmail = typeof window !== "undefined" ? localStorage.getItem("email") : null;
 
-  /* -------------------- Fetch Capsule -------------------- */
+  const isOwner = capsule?.owner?._id === currentUserId;
+  const isContributor = capsule?.contributors?.some((c: any) => c._id === currentUserId);
+  const canEdit = (isOwner || isContributor) ?? false;
+  const isRecipient = capsule?.recipients?.includes(currentUserEmail || "") ?? false;
+
   const fetchCapsule = async () => {
     const res = await fetch(`http://localhost:5000/api/capsules/${id}`, {
       headers: { Authorization: token || "" },
     });
-if (res.ok) {
-  const data = await res.json();
-
-  console.log("CAPSULE:", capsule);
-
-  setCapsule({
-    ...data,
-    isLocked: data.isLocked ?? false, // 👈 default safety
-  });
-
-    setRecipients(data.recipients || []);
-}
+    if (res.ok) {
+      const data = await res.json();
+      setCapsule({
+        ...data,
+        isLocked: data.isLocked ?? false,
+      });
+      setRecipients(data.recipients || []);
+    }
   };
 
   const fetchMemories = async () => {
@@ -133,9 +149,100 @@ if (res.ok) {
       const res = await fetch(`http://localhost:5000/api/memories/${id}`, {
         headers: { Authorization: token || "" },
       });
-      setMemories(await res.json());
+      const data = await res.json();
+      setMemories(data);
+
+      // Fetch reactions and comments for each memory
+      for (const memory of data) {
+        fetchReactionsForMemory(memory._id);
+        fetchCommentsForMemory(memory._id);
+      }
     } finally {
       setLoading(false);
+    }
+  };
+// Replace your fetchReactionsForMemory and fetchCommentsForMemory functions with these:
+
+const fetchReactionsForMemory = async (memoryId: string) => {
+  try {
+    const res = await fetch(`http://localhost:5000/api/reactions/${memoryId}`);
+    
+    // Check if response is ok
+    if (!res.ok) {
+      console.error(`Failed to fetch reactions: ${res.status} ${res.statusText}`);
+      // Set empty array on error so UI doesn't break
+      setMemoryReactions((prev) => ({ ...prev, [memoryId]: [] }));
+      return;
+    }
+    
+    const data = await res.json();
+    setMemoryReactions((prev) => ({ ...prev, [memoryId]: data }));
+  } catch (err) {
+    console.error("Failed to fetch reactions:", err);
+    // Set empty array on error so UI doesn't break
+    setMemoryReactions((prev) => ({ ...prev, [memoryId]: [] }));
+  }
+};
+
+const fetchCommentsForMemory = async (memoryId: string) => {
+  try {
+    const res = await fetch(`http://localhost:5000/api/comments/${memoryId}`);
+    
+    // Check if response is ok
+    if (!res.ok) {
+      console.error(`Failed to fetch comments: ${res.status} ${res.statusText}`);
+      // Set empty array on error so UI doesn't break
+      setMemoryComments((prev) => ({ ...prev, [memoryId]: [] }));
+      return;
+    }
+    
+    const data = await res.json();
+    setMemoryComments((prev) => ({ ...prev, [memoryId]: data }));
+  } catch (err) {
+    console.error("Failed to fetch comments:", err);
+    // Set empty array on error so UI doesn't break
+    setMemoryComments((prev) => ({ ...prev, [memoryId]: [] }));
+  }
+};
+  const addReaction = async (memoryId: string, emoji: string) => {
+    if (!isRecipient && !canEdit) return;
+
+    try {
+      await fetch(`http://localhost:5000/api/reactions?email=${currentUserEmail}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          memoryId,
+          emoji,
+          userName: currentUserName,
+        }),
+      });
+
+      fetchReactionsForMemory(memoryId);
+    } catch (err) {
+      console.error("Failed to add reaction");
+    }
+  };
+
+  const addComment = async (memoryId: string) => {
+    if (!commentText[memoryId]?.trim()) return;
+    if (!isRecipient && !canEdit) return;
+
+    try {
+      await fetch(`http://localhost:5000/api/comments?email=${currentUserEmail}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          memoryId,
+          text: commentText[memoryId],
+          userName: currentUserName,
+        }),
+      });
+
+      setCommentText({ ...commentText, [memoryId]: "" });
+      fetchCommentsForMemory(memoryId);
+    } catch (err) {
+      console.error("Failed to add comment");
     }
   };
 
@@ -144,49 +251,39 @@ if (res.ok) {
     fetchMemories();
   }, [id]);
 
-  // hydrate client-only values
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      setCurrentUserId(localStorage.getItem("userId"));
-      setIsClient(true);
+    if (!capsule?.unlockAt || !capsule?.isLocked) return;
+
+    setTimeLeft(getTimeLeft(capsule.unlockAt as string));
+
+    const interval = setInterval(() => {
+      setTimeLeft(getTimeLeft(capsule.unlockAt as string));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [capsule?.unlockAt, capsule?.isLocked]);
+
+  const addCollaborator = async () => {
+    if (!collabEmail.trim()) return;
+
+    setAddingCollab(true);
+    try {
+      await fetch(`http://localhost:5000/api/capsules/${id}/collaborators`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token || "",
+        },
+        body: JSON.stringify({ email: collabEmail }),
+      });
+
+      setCollabEmail("");
+      await fetchCapsule();
+    } finally {
+      setAddingCollab(false);
     }
-  }, []);
+  };
 
-  // 🔽 (COUNTDOWN EFFECT)
-  useEffect(() => {
-  if (!capsule?.unlockAt || !capsule?.isLocked) return;
-
-  setTimeLeft(getTimeLeft(capsule.unlockAt));
-
-  const interval = setInterval(() => {
-    setTimeLeft(getTimeLeft(capsule.unlockAt));
-  }, 1000);
-
-  return () => clearInterval(interval);
-}, [capsule?.unlockAt, capsule?.isLocked]);
-
-const addCollaborator = async () => {
-  if (!collabEmail.trim()) return;
-
-  setAddingCollab(true);
-  try {
-    await fetch(`http://localhost:5000/api/capsules/${id}/collaborators`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: token || "",
-      },
-      body: JSON.stringify({ email: collabEmail }),
-    });
-
-    setCollabEmail("");
-    await fetchCapsule(); // refresh capsule data
-  } finally {
-    setAddingCollab(false);
-  }
-};
-
-  /* -------------------- Media Preview -------------------- */
   useEffect(() => {
     if (!mediaFile) {
       setMediaPreview(null);
@@ -197,7 +294,6 @@ const addCollaborator = async () => {
     return () => URL.revokeObjectURL(url);
   }, [mediaFile]);
 
-  /* -------------------- Add Text Memory -------------------- */
   const addMemory = async () => {
     if (!content.trim()) return;
 
@@ -218,7 +314,6 @@ const addCollaborator = async () => {
     }
   };
 
-  /* -------------------- Upload Media -------------------- */
   const uploadMedia = async () => {
     if (!mediaFile || !mediaType) return;
 
@@ -240,6 +335,7 @@ const addCollaborator = async () => {
 
       setMediaFile(null);
       setMediaPreview(null);
+      setMediaCaption("");
       setUploadSuccess(true);
 
       setTimeout(() => setUploadSuccess(false), 2500);
@@ -250,7 +346,6 @@ const addCollaborator = async () => {
     }
   };
 
-  /* -------------------- Delete Memory -------------------- */
   const deleteMemory = async (memoryId: string) => {
     if (!confirm("Delete this memory permanently?")) return;
 
@@ -261,423 +356,706 @@ const addCollaborator = async () => {
     await fetchMemories();
   };
 
+  const addRecipient = () => {
+    if (!recipientEmail.trim()) return;
+    if (recipients.includes(recipientEmail)) return;
 
+    setRecipients([...recipients, recipientEmail]);
+    setRecipientEmail("");
+  };
 
-const addRecipient = () => {
-  if (!recipientEmail.trim()) return;
-  if (recipients.includes(recipientEmail)) return;
-
-  setRecipients([...recipients, recipientEmail]);
-  setRecipientEmail("");
-};
-
-const removeRecipient = (email: string) => {
-  setRecipients(recipients.filter(r => r !== email));
-};
+  const removeRecipient = (email: string) => {
+    setRecipients(recipients.filter((r) => r !== email));
+  };
 
 const saveRecipients = async () => {
+  const oldRecipients = capsule?.recipients || [];
+  const newRecipients = recipients.filter(r => !oldRecipients.includes(r));
+
   await fetch(`http://localhost:5000/api/capsules/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
-      Authorization: token || ""
+      Authorization: token || "",
     },
-    body: JSON.stringify({ recipients })
+    body: JSON.stringify({ recipients }),
   });
 
-  alert("Recipients saved");
+  // Notify newly added recipients
+  if (newRecipients.length > 0) {
+    await fetch(`http://localhost:5000/api/capsules/${id}/notify-recipients`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: token || "",
+      },
+      body: JSON.stringify({ newRecipients }),
+    });
+  }
+
+  alert("Recipients saved & notified!");
+  await fetchCapsule();
 };
 
-  //  Prevent rendering before capsule loads
-if (!capsule) {
-  return (
-    <div className="p-10 text-center text-gray-400">
-      Loading capsule…
-    </div>
-  );
-}
-  /* -------------------- UI -------------------- */
-  return (
-    <div className="p-6 max-w-3xl mx-auto">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <button
-          onClick={() => router.push("/dashboard")}
-          className="px-4 py-2 rounded-full bg-white/10 text-white"
-        >
-          ← Back
-        </button>
-
-        <span className="text-sm text-gray-400">
-          Memories: {memories.length}
-        </span>
+  if (!capsule) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="text-white text-xl">Loading capsule…</div>
       </div>
+    );
+  }
 
-{/* 👑 Admin + 👥 Collaborators */}
-<div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-
-  {/* 👑 Admin */}
-  {capsule?.owner && (
-    <div className="bg-white p-4 rounded-xl shadow">
-      <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-        👑 Admin
-      </h4>
-
-      <div className="flex items-center gap-4">
-        <img
-          src={
-            capsule.owner.profileImage ||
-            getAvatarUrl(capsule.owner.email)
-          }
-          className="w-12 h-12 rounded-full border object-cover"
-        />
-
-        <div>
-          <p className="text-sm font-semibold text-gray-900">
-            {capsule.owner.name}
-          </p>
-          <p className="text-xs text-gray-500">
-            {capsule.owner.email}
-          </p>
+  return (
+    <div className="min-h-screen bg-slate-950 text-white">
+      {/* Animated Background */}
+      <div className="fixed inset-0 z-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950"></div>
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-0 -left-4 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>
+          <div className="absolute top-0 -right-4 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000"></div>
         </div>
       </div>
-    </div>
+
+      {/* Content */}
+      <div className="relative z-10 p-6 max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-8">
+          <motion.button
+            whileHover={{ x: -5 }}
+            onClick={() => router.push("/dashboard")}
+            className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            <span>Back to Dashboard</span>
+          </motion.button>
+
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-gray-400">{memories.length} memories</span>
+            {capsule.isLocked ? (
+              <span className="px-3 py-1 rounded-full bg-red-500/20 border border-red-400/30 text-red-300 text-xs font-semibold">
+                🔒 Locked
+              </span>
+            ) : (
+              <span className="px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-semibold">
+                🔓 Unlocked
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Capsule Info Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative mb-8"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-3xl blur-2xl"></div>
+
+          <div className="relative bg-slate-900/50 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl p-8">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 text-transparent bg-clip-text mb-2">
+              {capsule.title}
+            </h1>
+            <p className="text-gray-400 text-lg mb-4">{capsule.theme}</p>
+
+         <div className="flex items-center gap-4 text-sm text-gray-400">
+  {capsule.unlockAt && (
+    <>
+<span className="text-sm text-gray-400">
+  {capsule.isLocked && capsule.unlockAt
+    ? `Unlocks: ${new Date(capsule.unlockAt).toLocaleString()}`
+    : "🔓 Available now"}
+</span>      <span>•</span>
+    </>
   )}
+  <span>{capsule.contributors?.length || 0} collaborators</span>
+  <span>•</span>
+  <span>{capsule.recipients?.length || 0} recipients</span>
+</div>
+          </div>
+        </motion.div>
 
-  {/* 👥 Collaborators */}
-  <div className="bg-white p-4 rounded-xl shadow">
-    <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-      👥 Collaborators
-    </h4>
+        {/* Admin + Collaborators + Recipients (Only for Owner/Contributors) */}
+        {canEdit && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {/* Admin */}
+            {capsule?.owner && (
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-6"
+              >
+                <h4 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <span>👑</span>
+                  <span>Admin</span>
+                </h4>
 
-    {capsule?.contributors?.length ? (
-      <div className="space-y-3">
-        {capsule.contributors.map((u) => (
-          <div key={u._id} className="flex items-center gap-4">
-            <img
-              src={u.profileImage || getAvatarUrl(u.email)}
-              className="w-10 h-10 rounded-full border object-cover"
-            />
+                <div className="flex items-center gap-4">
+                  <img
+                    src={capsule.owner.profileImage || getAvatarUrl(capsule.owner.email)}
+                    className="w-12 h-12 rounded-full border-2 border-purple-500/30 object-cover"
+                    alt={capsule.owner.name}
+                  />
+                  <div>
+                    <p className="font-semibold text-white">{capsule.owner.name}</p>
+                    <p className="text-sm text-gray-400">{capsule.owner.email}</p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
 
-            <div>
-              <p className="text-sm font-medium text-gray-900">
-                {u.name}
-              </p>
-              <p className="text-xs text-gray-500">
-                {u.email}
+            {/* Collaborators */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-6"
+            >
+              <h4 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <span>👥</span>
+                <span>Collaborators</span>
+              </h4>
+
+              {capsule?.contributors?.length ? (
+                <div className="space-y-3 max-h-32 overflow-y-auto">
+                  {capsule.contributors.map((u) => (
+                    <div key={u._id} className="flex items-center gap-3">
+                      <img
+                        src={u.profileImage || getAvatarUrl(u.email)}
+                        className="w-10 h-10 rounded-full border object-cover"
+                        alt={u.name}
+                      />
+                      <div>
+                        <p className="text-sm font-medium text-white">{u.name}</p>
+                        <p className="text-xs text-gray-400">{u.email}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400">No collaborators yet</p>
+              )}
+            </motion.div>
+          </div>
+        )}
+
+        {/* Add Collaborator (Owner only) */}
+        {isOwner && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-6 mb-6"
+          >
+            <h4 className="text-lg font-semibold mb-4">Add Collaborator</h4>
+
+            <div className="flex gap-3">
+              <input
+                type="email"
+                placeholder="Collaborator email"
+                value={collabEmail}
+                onChange={(e) => setCollabEmail(e.target.value)}
+                className="flex-1 px-4 py-3 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+              />
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={addCollaborator}
+                disabled={addingCollab}
+                className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl font-semibold disabled:opacity-50"
+              >
+                {addingCollab ? "Adding…" : "Add"}
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Add Recipients (Owner only) */}
+        {isOwner && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-6 mb-6"
+          >
+            <h4 className="text-lg font-semibold mb-2">Recipients</h4>
+            <p className="text-sm text-gray-400 mb-4">
+              Recipients will be notified when the capsule unlocks and can view & react to memories
+            </p>
+
+            <div className="flex gap-3 mb-4">
+              <input
+                type="email"
+                placeholder="Recipient email"
+                value={recipientEmail}
+                onChange={(e) => setRecipientEmail(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addRecipient())}
+                className="flex-1 px-4 py-3 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+              />
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={addRecipient}
+                className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl font-semibold"
+              >
+                Add
+              </motion.button>
+            </div>
+
+            {recipients.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-4 p-4 rounded-xl bg-slate-800/30 border border-white/10">
+                {recipients.map((email) => (
+                  <span
+                    key={email}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-100 text-sm"
+                  >
+                    {email}
+                    <button
+                      onClick={() => removeRecipient(email)}
+                      className="text-emerald-300 hover:text-emerald-100 transition"
+                    >
+                      ✕
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={saveRecipients}
+              className="w-full py-3 bg-slate-700 hover:bg-slate-600 rounded-xl font-semibold transition-colors"
+            >
+              Save Recipients
+            </motion.button>
+          </motion.div>
+        )}
+
+        {/* Locked Capsule View */}
+        {capsule?.isLocked && !canEdit && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mb-6 relative"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-3xl blur-xl"></div>
+
+            <div className="relative p-10 rounded-3xl border-2 border-purple-500/20 bg-slate-900/50 backdrop-blur-xl text-center shadow-2xl">
+              <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-4xl shadow-lg">
+                🔒
+              </div>
+
+              <h3 className="text-2xl font-bold text-white mb-2">Capsule Locked</h3>
+
+            <p className="text-gray-400 mb-6">
+  This capsule will unlock on:<br />
+  <strong className="text-white text-lg">
+    {new Date(capsule.unlockAt || "").toLocaleString(undefined, {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })}
+  </strong>
+</p>
+              {timeLeft ? (
+                <div className="max-w-md mx-auto">
+                  <p className="text-sm text-purple-400 mb-4 font-semibold">Time Remaining:</p>
+                  <div className="grid grid-cols-4 gap-4">
+                    <div className="bg-slate-800/50 rounded-xl p-4 border border-white/10">
+                      <div className="text-4xl font-bold text-white mb-1">{timeLeft.days}</div>
+                      <div className="text-xs text-gray-400 uppercase">Days</div>
+                    </div>
+                    <div className="bg-slate-800/50 rounded-xl p-4 border border-white/10">
+                      <div className="text-4xl font-bold text-white mb-1">{timeLeft.hours}</div>
+                      <div className="text-xs text-gray-400 uppercase">Hours</div>
+                    </div>
+                    <div className="bg-slate-800/50 rounded-xl p-4 border border-white/10">
+                      <div className="text-4xl font-bold text-white mb-1">{timeLeft.minutes}</div>
+                      <div className="text-xs text-gray-400 uppercase">Minutes</div>
+                    </div>
+                    <div className="bg-slate-800/50 rounded-xl p-4 border border-white/10">
+                      <div className="text-4xl font-bold text-white mb-1">{timeLeft.seconds}</div>
+                      <div className="text-xs text-gray-400 uppercase">Seconds</div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+                  <p className="text-emerald-400 font-semibold">🔓 Unlocking very soon...</p>
+                </div>
+              )}
+
+              <p className="text-sm text-gray-500 mt-6">
+                You'll receive an email notification when this capsule unlocks
               </p>
             </div>
+          </motion.div>
+        )}
+
+        {/* Composer (Owner/Contributors only) */}
+        {canEdit && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-6 mb-8 shadow-xl"
+          >
+            <h4 className="text-lg font-semibold mb-4">Add a Memory</h4>
+
+            <ReactQuill
+              value={content}
+              onChange={setContent}
+              modules={quillModules}
+              placeholder="Write a memory..."
+              className="bg-slate-800/30 rounded-xl mb-4"
+              theme="snow"
+            />
+
+            <p className="text-sm text-gray-400 mt-4 mb-2">Or upload media</p>
+
+            <div className="flex flex-wrap gap-3 mb-4">
+              {["image", "audio", "video"].map((type) => (
+                <label
+                  key={type}
+                  className="cursor-pointer px-4 py-2 rounded-xl bg-slate-800/50 border border-white/10 text-sm text-white flex items-center gap-2 hover:bg-slate-700/50 transition"
+                >
+                  {type === "image" && <>🖼 Image</>}
+                  {type === "audio" && <>🎧 Audio</>}
+                  {type === "video" && <>🎥 Video</>}
+
+                  <input
+                    hidden
+                    type="file"
+                    accept={`${type}/*`}
+                    onChange={(e) => {
+                      setMediaFile(e.target.files?.[0] || null);
+                      setMediaType(type as any);
+                      setUploadSuccess(false);
+                    }}
+                  />
+                </label>
+              ))}
+
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={uploadMedia}
+                disabled={!mediaFile || uploading}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white flex items-center gap-2 disabled:opacity-50"
+              >
+{uploading && (
+              <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            )}
+            Upload
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={addMemory}
+            disabled={!content.trim() || adding}
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white disabled:opacity-50"
+          >
+            {adding ? "Adding…" : "Add Memory"}
+          </motion.button>
+        </div>
+
+        {/* Media Preview */}
+        {mediaPreview && (
+          <div className="mt-4 p-4 border border-white/10 rounded-xl bg-slate-800/30 space-y-3">
+            {mediaType === "image" && <img src={mediaPreview} className="w-40 rounded-lg" alt="Preview" />}
+
+            {mediaType === "audio" && (
+              <audio controls className="w-full">
+                <source src={mediaPreview} />
+              </audio>
+            )}
+
+            {mediaType === "video" && (
+              <video controls className="w-full max-h-60 rounded-lg">
+                <source src={mediaPreview} />
+              </video>
+            )}
+
+            <input
+              type="text"
+              placeholder="Add a caption (optional)"
+              value={mediaCaption}
+              onChange={(e) => setMediaCaption(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg bg-slate-700/50 border border-white/10 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+            />
+
+            <button
+              onClick={() => {
+                setMediaFile(null);
+                setMediaPreview(null);
+                setMediaCaption("");
+              }}
+              className="text-xs text-red-400 hover:underline"
+            >
+              Remove
+            </button>
           </div>
-        ))}
+        )}
+      </motion.div>
+    )}
+
+  {/* Memories */}
+    {(canEdit || (isRecipient && !capsule?.isLocked)) && (
+      <div className="space-y-6">
+        {loading ? (
+          <p className="text-gray-400 text-center py-8">Loading memories…</p>
+        ) : memories.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="w-20 h-20 mx-auto mb-4 bg-purple-500/10 rounded-full flex items-center justify-center text-4xl">
+              📝
+            </div>
+            <p className="text-gray-400">No memories yet. {canEdit && "Add the first one!"}</p>
+          </div>
+        ) : (
+          memories.map((m) => (
+            <MemoryCard
+              key={m._id}
+              memory={m}
+              canEdit={canEdit}
+              isRecipient={isRecipient}
+              isUnlocked={!capsule?.isLocked}
+              reactions={memoryReactions[m._id] || []}
+              comments={memoryComments[m._id] || []}
+              commentText={commentText[m._id] || ""}
+              onAddReaction={(emoji) => addReaction(m._id, emoji)}
+              onAddComment={() => addComment(m._id)}
+              onCommentTextChange={(text) => setCommentText({ ...commentText, [m._id]: text })}
+              onDelete={() => deleteMemory(m._id)}
+              currentUserEmail={currentUserEmail || ""}
+            />
+          ))
+        )}
       </div>
-    ) : (
-      <p className="text-sm text-gray-400">
-        No collaborators yet
-      </p>
     )}
   </div>
 
+  <style jsx global>{`
+    @keyframes blob {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(30px, -50px) scale(1.1); }
+      66% { transform: translate(-20px, 20px) scale(0.9); }
+    }
+    .animate-blob { animation: blob 7s infinite; }
+    .animation-delay-2000 { animation-delay: 2s; }
+
+    /* Quill Editor Dark Theme */
+    .ql-toolbar {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      border-radius: 12px 12px 0 0;
+    }
+    .ql-container {
+      background: rgba(30, 41, 59, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      border-radius: 0 0 12px 12px;
+      color: white;
+    }
+    .ql-editor {
+      min-height: 150px;
+      color: white;
+    }
+    .ql-editor.ql-blank::before {
+      color: rgba(156, 163, 175, 0.5);
+    }
+    .ql-stroke {
+      stroke: rgba(255, 255, 255, 0.7) !important;
+    }
+    .ql-fill {
+      fill: rgba(255, 255, 255, 0.7) !important;
+    }
+    .ql-picker-label {
+      color: rgba(255, 255, 255, 0.7) !important;
+    }
+  `}</style>
 </div>
 
-   {/* Add Collaborator (Owner only) */}
-{capsule && (
-  <div className="mb-6 bg-white p-4 rounded-xl shadow">
-    <h4 className="text-sm font-semibold text-gray-700 mb-2">
-      Add collaborator
-    </h4>
-
-    <div className="flex gap-2">
-      <input
-        type="email"
-        placeholder="Collaborator email"
-        value={collabEmail}
-        onChange={(e) => setCollabEmail(e.target.value)}
-        className="flex-1 px-3 py-2 border rounded-lg text-sm text-gray-900"
-      />
-
-      <button
-        onClick={addCollaborator}
-        disabled={addingCollab}
-        className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm"
-      >
-        {addingCollab ? "Adding…" : "Add"}
-      </button>
-    </div>
-  </div>
+);
+}
+// ========== MEMORY CARD COMPONENT ==========
+function MemoryCard({
+memory,
+canEdit,
+isRecipient,
+isUnlocked,
+reactions,
+comments,
+commentText,
+onAddReaction,
+onAddComment,
+onCommentTextChange,
+onDelete,
+currentUserEmail,
+}: {
+memory: Memory;
+canEdit: boolean;
+isRecipient: boolean;
+isUnlocked: boolean;
+reactions: Reaction[];
+comments: Comment[];
+commentText: string;
+onAddReaction: (emoji: string) => void;
+onAddComment: () => void;
+onCommentTextChange: (text: string) => void;
+onDelete: () => void;
+currentUserEmail: string;
+}) {
+const [showComments, setShowComments] = useState(false);
+const canInteract = (isRecipient || canEdit) && isUnlocked;
+const emojiOptions = ["❤️", "👍", "😂", "😮", "😢", "🔥"];
+// Group reactions by emoji
+const groupedReactions = reactions.reduce((acc, r) => {
+if (!acc[r.emoji]) acc[r.emoji] = [];
+acc[r.emoji].push(r);
+return acc;
+}, {} as { [emoji: string]: Reaction[] });
+return (
+<motion.div
+initial={{ opacity: 0, y: 20 }}
+animate={{ opacity: 1, y: 0 }}
+className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-6 shadow-xl"
+>
+{/* Memory Content */}
+{memory.type === "text" && (
+<div
+className="prose prose-invert max-w-none mb-4"
+dangerouslySetInnerHTML={{ __html: memory.content }}
+/>
 )}
-
-
-{/* 📧 Recipients */}
-{capsule && capsule.owner === undefined && (
-  <div className="mb-6 bg-white p-4 rounded-xl shadow">
-    <h4 className="text-sm font-semibold text-gray-700 mb-2">
-      Recipients (will be notified on unlock)
-    </h4>
-
-    <div className="flex gap-2 mb-3">
-      <input
-        type="email"
-        placeholder="Recipient email"
-        value={recipientEmail}
-        onChange={(e) => setRecipientEmail(e.target.value)}
-        className="flex-1 px-3 py-2 border rounded-lg text-sm text-gray-900"
-      />
-
-      <button
-        onClick={addRecipient}
-        className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm"
-      >
-        Add
-      </button>
+{memory.type === "image" && (
+    <div className="space-y-2">
+      {memory.caption && <p className="text-sm font-medium text-gray-300">{memory.caption}</p>}
+      <img src={memory.content} className="rounded-xl max-h-96 w-full object-cover" alt="Memory" />
     </div>
+  )}
 
-    {/* Recipient list */}
-    <div className="flex flex-wrap gap-2">
-      {recipients.map((email) => (
-        <span
-          key={email}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 text-sm"
-        >
-          {email}
-          <button
-            onClick={() => removeRecipient(email)}
-            className="text-red-500 hover:text-red-700"
-          >
-            ✕
-          </button>
-        </span>
-      ))}
+  {memory.type === "audio" && (
+    <div className="space-y-2">
+      {memory.caption && <p className="text-sm font-medium text-gray-300">{memory.caption}</p>}
+      <audio controls className="w-full">
+        <source src={memory.content} />
+      </audio>
     </div>
+  )}
 
-    <button
-      onClick={saveRecipients}
-      className="mt-4 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm"
-    >
-      Save Recipients
-    </button>
-  </div>
-)}
+  {memory.type === "video" && (
+    <div className="space-y-2">
+      {memory.caption && <p className="text-sm font-medium text-gray-300">{memory.caption}</p>}
+      <video controls className="w-full rounded-xl">
+        <source src={memory.content} />
+      </video>
+    </div>
+  )}
 
+  {/* Reactions Bar */}
+  {canInteract && (
+    <div className="mt-4 pt-4 border-t border-white/10">
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        {emojiOptions.map((emoji) => {
+          const count = groupedReactions[emoji]?.length || 0;
+          const userReacted = groupedReactions[emoji]?.some((r) => r.userEmail === currentUserEmail);
 
-
-
-   {/* Composer */}
-{(() => {
-  const isOwner = capsule?.owner?._id === currentUserId;
-  const isContributor = capsule?.contributors?.some((c: any) => c._id === currentUserId);
-  const canEdit = isOwner || isContributor;
-
-  return canEdit ? (
-    <div className="bg-white rounded-2xl p-4 mb-6 shadow">
-          <ReactQuill
-            value={content}
-            onChange={setContent}
-            modules={quillModules}
-            placeholder="Write a memory..."
-            className="text-black"
-          />
-
-          <p className="text-sm text-gray-600 mt-4 mb-2">
-            Upload media
-          </p>
-
-          {/* Media Buttons */}
-          <div className="flex flex-wrap gap-3 mt-4">
-            {["image", "audio", "video"].map((type) => (
-              <label
-                key={type}
-                className="cursor-pointer px-4 py-2 rounded-full border bg-white text-sm text-black flex items-center gap-2 hover:bg-gray-100 transition"
-              >
-                {type === "image" && <>🖼 <span>Image</span></>}
-                {type === "audio" && <>🎧 <span>Audio</span></>}
-                {type === "video" && <>🎥 <span>Video</span></>}
-
-                <input
-                  hidden
-                  type="file"
-                  accept={`${type}/*`}
-                  onChange={(e) => {
-                    setMediaFile(e.target.files?.[0] || null);
-                    setMediaType(type as any);
-                    setUploadSuccess(false);
-                  }}
-                />
-              </label>
-            ))}
-
-            <button
-              onClick={uploadMedia}
-              disabled={!mediaFile || uploading}
-              className="px-4 py-2 rounded-full bg-indigo-600 text-white flex items-center gap-2"
+          return (
+            <motion.button
+              key={emoji}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => onAddReaction(emoji)}
+              className={`px-3 py-1.5 rounded-full border transition-all ${
+                userReacted
+                  ? "bg-purple-500/30 border-purple-400/50"
+                  : "bg-slate-800/50 border-white/10 hover:bg-slate-700/50"
+              }`}
             >
-              {uploading && (
-                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-              )}
-              Upload
-            </button>
-
-            <button
-              onClick={addMemory}
-              disabled={!content.trim() || adding}
-              className="px-4 py-2 rounded-full bg-emerald-600 text-white flex items-center gap-2"
-            >
-              {adding && (
-                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-              )}
-              Add Memory
-            </button>
-
-            {/* Media Preview + Caption */}
-            {mediaPreview && (
-              <div className="mt-4 p-4 border rounded-xl bg-gray-50 space-y-3">
-                {mediaType === "image" && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={mediaPreview} alt="preview" className="w-40 rounded-lg" />
-                )}
-
-                {mediaType === "audio" && (
-                  <audio controls className="w-full">
-                    <source src={mediaPreview} />
-                  </audio>
-                )}
-
-                {mediaType === "video" && (
-                  <video controls className="w-full max-h-60 rounded-lg">
-                    <source src={mediaPreview} />
-                  </video>
-                )}
-
-                <input
-                  type="text"
-                  placeholder="Add a caption (optional)"
-                  value={mediaCaption}
-                  onChange={(e) => setMediaCaption(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                />
-
-                <button
-                  onClick={() => {
-                    setMediaFile(null);
-                    setMediaPreview(null);
-                    setMediaCaption("");
-                  }}
-                  className="text-xs text-red-600 hover:underline"
-                >
-                  Remove
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Upload Success Message */}
-          {uploadSuccess && (
-            <div className="mt-4 p-3 rounded-lg bg-green-50 text-green-800 text-sm">
-              Media uploaded successfully!
-            </div>
-          )}
-        </div>
-  ) : null;
-})()}
-
-   
-
-      {/* Memories List */}
-      <div className="space-y-4">
-        {loading && (
-          <div className="animate-pulse flex flex-col space-y-2">
-            {[...Array(3)].map((_, i) => (
-              <div
-                key={i}
-                className="h-24 bg-white rounded-xl shadow-md p-4 flex flex-col justify-between"
-              >
-                <div className="h-2 bg-gray-200 rounded-full"></div>
-                <div className="flex-1"></div>
-                <div className="h-2 bg-gray-200 rounded-full w-3/4"></div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {!loading && memories.length === 0 && (
-          <div className="p-4 rounded-xl bg-white shadow-md text-center text-gray-500">
-            No memories yet. Be the first to add one!
-          </div>
-        )}
-
-        {memories.map((memory) => (
-          <div
-            key={memory._id}
-            className="p-4 rounded-xl bg-white shadow-md flex flex-col gap-4"
-          >
-            {/* Memory Content */}
-            {memory.type === "text" && (
-              <div
-                className="prose max-w-none text-gray-900"
-                dangerouslySetInnerHTML={{ __html: memory.content }}
-              />
-            )}
-
-            {/* Memory Media */}
-            {memory.type !== "text" && (
-              <div className="flex flex-col sm:flex-row gap-4">
-                {memory.type === "image" && (
-                  <img
-                    src={memory.content}
-                    alt={memory.caption}
-                    className="w-full h-auto rounded-lg shadow-md"
-                  />
-                )}
-
-                {memory.type === "audio" && (
-                  <audio controls className="w-full rounded-lg shadow-md">
-                    <source src={memory.content} />
-                    Your browser does not support the audio element.
-                  </audio>
-                )}
-
-                {memory.type === "video" && (
-                  <video controls className="w-full rounded-lg shadow-md">
-                    <source src={memory.content} />
-                    Your browser does not support the video tag.
-                  </video>
-                )}
-              </div>
-            )}
-
-            {/* Memory Caption */}
-            {memory.caption && (
-              <p className="text-sm text-gray-500 italic">
-                {memory.caption}
-              </p>
-            )}
-
-            {/* Memory Actions (Owner only) */}
-            {capsule?.owner?._id === currentUserId && (
-              <div className="flex justify-end gap-2">
-                <button
-                  onClick={() => deleteMemory(memory._id)}
-                  className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm"
-                >
-                  Delete
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
+              <span className="text-lg">{emoji}</span>
+              {count > 0 && <span className="ml-1 text-xs text-gray-300">{count}</span>}
+            </motion.button>
+          );
+        })}
       </div>
 
-      {/* Unlock Info (Admin only) */}
-      {capsule?.owner?._id === currentUserId && capsule.isLocked && (
-        <div className="mt-8 p-4 rounded-xl bg-yellow-50 text-yellow-800 text-sm">
-          {capsule.unlockAt && isClient ? (
-            <>This capsule will unlock on {new Date(capsule.unlockAt).toLocaleDateString()} at {new Date(capsule.unlockAt).toLocaleTimeString()}</>
-          ) : capsule.unlockAt ? (
-            <>Unlock date set</>
-          ) : (
-            <>Unlock date not set</>
-          )}
-        </div>
-      )}
+      {/* Comments Toggle */}
+      <motion.button
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={() => setShowComments(!showComments)}
+        className="text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-2"
+      >
+        💬 {comments.length} {comments.length === 1 ? "comment" : "comments"}
+      </motion.button>
+
+      {/* Comments Section */}
+      <AnimatePresence>
+        {showComments && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mt-4 space-y-3"
+          >
+            {/* Comments List */}
+            {comments.map((c) => (
+              <div key={c._id} className="p-3 bg-slate-800/30 rounded-xl border border-white/10">
+                <div className="flex items-start justify-between mb-1">
+                  <p className="text-sm font-semibold text-purple-400">{c.userName}</p>
+                  <p className="text-xs text-gray-500">
+                    {new Date(c.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <p className="text-sm text-gray-300">{c.text}</p>
+              </div>
+            ))}
+
+            {/* Add Comment */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Write a comment..."
+                value={commentText}
+                onChange={(e) => onCommentTextChange(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && onAddComment()}
+                className="flex-1 px-4 py-2 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+              />
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={onAddComment}
+                disabled={!commentText.trim()}
+                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl text-sm font-semibold disabled:opacity-50"
+              >
+                Post
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
-  );
-}
+  )}
+
+  {/* Footer */}
+  <div className="flex justify-between items-center mt-4 pt-4 border-t border-white/10">
+    <span className="text-xs text-gray-400">
+      {memory.createdAt && new Date(memory.createdAt).toLocaleString()}
+    </span>
+    {canEdit && (
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={onDelete}
+        className="px-3 py-1.5 rounded-full text-sm font-medium bg-red-500/20 border border-red-400/30 text-red-300 hover:bg-red-500/30 transition"
+      >
+        Delete
+      </motion.button>
+    )}
+  </div>
+</motion.div>
+)}

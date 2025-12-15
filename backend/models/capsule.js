@@ -9,8 +9,13 @@ const capsuleSchema = new mongoose.Schema({
     enum: ["date", "event"]
   },
 
-  unlockAt: Date,
+    unlockAt: {
+    type: Date,
+    required: true
+  },
+  
   unlockEvent: String,
+
 
   owner: {
     type: mongoose.Schema.Types.ObjectId,
