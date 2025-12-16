@@ -136,30 +136,6 @@ capsulr/
 
 ---
 
-
-
-🌍 Deployment
-
-Frontend → Vercel
-
-Backend → Render
-
-Database → MongoDB Atlas
-
-Media Storage → Cloudinary
-
-🔐 Security
-
-JWT-based authentication
-
-Owner-only capsule management
-
-Secure file uploads
-
-Environment-based secrets
-
-Production-safe CORS setup
-
 ## 🖥️ Frontend Tech Stack
 
 - **Next.js (App Router)**
