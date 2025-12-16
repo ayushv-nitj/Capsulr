@@ -91,14 +91,6 @@ NEXT_PUBLIC_API_URL=https://your-backend-url.onrender.com
 
 ---
 
-## 🧠 Planned Enhancements
-- 📧 Email notifications on capsule unlock
-- 🤖 AI Memory Assistant (summaries, captions, transcription)
-- 💬 Post-unlock reactions & comments
-- 🔒 Capsule privacy levels (private / shared / public)
-
----
-
 ## 🏗️ Tech Stack
 
 ### Frontend
