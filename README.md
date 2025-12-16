@@ -160,11 +160,140 @@ Environment-based secrets
 
 Production-safe CORS setup
 
-🧪 Project Status
+## 🖥️ Frontend Tech Stack
 
-✔ Active Development
-✔ Production-ready Architecture
-✔ Hackathon-grade Project
+- **Next.js (App Router)**
+- **TypeScript**
+- **Tailwind CSS**
+- **Framer Motion**
+- **React Quill**
+- **Client Components**
+
+### Frontend Responsibilities
+- Authentication handling
+- Capsule creation & listing
+- Real-time countdown updates
+- Rich text editor for memories
+- Media previews before upload
+- Permission-based rendering
+- Smooth animations & UX
+
+---
+
+## ⚙️ Backend Tech Stack
+
+- **Node.js**
+- **Express**
+- **MongoDB + Mongoose**
+- **JWT Authentication**
+- **Multer**
+- **Cloudinary**
+- **Nodemailer (emails)**
+
+### Backend Responsibilities
+- Authentication & authorization
+- Capsule lifecycle management
+- Auto-unlock logic
+- Media upload & storage
+- Collaborator management
+- Secure data persistence
+
+---
+
+## 🗄️ Database Models
+
+### User
+```js
+{
+  name: String,
+  email: String,
+  password: String,
+  profileImage: String
+}
+
+### Capsule
+
+{
+  title: String,
+  theme: String,
+  unlockAt: Date,
+  owner: ObjectId,
+  contributors: [ObjectId],
+  recipients: [String],
+  isLocked: Boolean,
+  isUnlocked: Boolean
+}
+
+### Memory
+
+{
+  capsuleId: ObjectId,
+  type: "text" | "image" | "audio" | "video",
+  content: String,
+  caption: String,
+  createdBy: ObjectId
+}
+
+
+---
+
+# 🔐 Authentication & Roles
+
+Role	Permissions
+
+Owner	Full control
+Collaborator	Add/edit memories
+Recipient	View after unlock
+
+
+JWT tokens are stored securely in local storage and validated on every API request.
+
+
+---
+
+# ⏳ Capsule Locking Logic
+
+Capsules are locked by default
+
+Countdown runs in real time (frontend)
+
+Backend auto-unlocks capsules after unlock time
+
+Locked capsules:
+
+Editable by owner & collaborators
+
+Hidden from recipients
+
+Unlocked capsules:
+
+Visible to recipients
+
+Read-only access
+
+
+---
+
+## ☁️ Media Upload Flow
+
+1. User selects media file
+
+
+2. Preview displayed instantly
+
+
+3. File sent using FormData
+
+
+4. Multer processes file
+
+
+5. Cloudinary uploads file
+
+
+6. Secure URL stored in MongoDB
+
+
 
 👨‍💻 Author
 
