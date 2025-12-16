@@ -179,7 +179,7 @@ capsulr/
 ## 🗄️ Database Models
 
 ### User
-```js
+
 {
   name: String,
   email: String,
