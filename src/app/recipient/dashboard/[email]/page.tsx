@@ -1,5 +1,5 @@
 "use client";
-
+import { API_URL } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -41,7 +41,7 @@ export default function RecipientDashboard() {
   useEffect(() => {
     const fetchCapsules = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/capsules/recipient-list/${email}`);
+        const res = await fetch(`${API_URL}/api/capsules/recipient-list/${email}`);
         if (res.ok) {
           const data = await res.json();
           setCapsules(data);

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
-
+import { API_URL } from "@/lib/api";
 type TimeLeft = {
   days: number;
   hours: number;
@@ -32,7 +32,7 @@ export default function RecipientView() {
   useEffect(() => {
     const fetchCapsule = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/capsules/recipient/${id}/${email}`);
+        const res = await fetch(`${API_URL}/api/capsules/recipient/${id}/${email}`);
         if (!res.ok) {
           const data = await res.json();
           setError(data.message || "Access denied");
@@ -43,7 +43,7 @@ export default function RecipientView() {
 
         // Only fetch memories if unlocked
         if (!data.isLocked) {
-          const memRes = await fetch(`http://localhost:5000/api/capsules/recipient/${id}/${email}/memories`);
+          const memRes = await fetch(`${API_URL}/api/capsules/recipient/${id}/${email}/memories`);
           if (memRes.ok) {
             const memData = await memRes.json();
             setMemories(memData);
