@@ -1,4 +1,5 @@
 "use client";
+import { API_URL } from "@/lib/api";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -52,7 +53,7 @@ export default function CreateCapsule() {
     const localDate = new Date(`${unlockDate}T${unlockTime}`);
     const unlockAt = localDate.toISOString();
 
-    const res = await fetch("http://localhost:5000/api/capsules", {
+    const res = await fetch(`${API_URL}/api/capsules`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

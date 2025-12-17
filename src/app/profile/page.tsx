@@ -1,9 +1,10 @@
 "use client";
-
 import { useRef, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getAvatarUrl } from "@/lib/avatar";
 import Cropper from "react-easy-crop";
+import { API_URL } from "@/lib/api";
+
 import { motion, AnimatePresence } from "framer-motion";
 
 async function getCroppedImage(imageSrc: string, crop: any) {
@@ -66,7 +67,7 @@ export default function Profile() {
     // Fetch capsules
     const fetchCapsules = async () => {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/capsules", {
+      const res = await fetch(`${API_URL}/api/capsules`, {
         headers: { Authorization: token || "" },
       });
       const data = await res.json();
@@ -367,7 +368,7 @@ export default function Profile() {
                       const formData = new FormData();
                       formData.append("image", croppedBlob);
 
-                      const res = await fetch("http://localhost:5000/api/user/profile-image", {
+                      const res = await fetch(`${API_URL}/api/user/profile-image`, {
                         method: "POST",
                         headers: {
                           Authorization: token || "",

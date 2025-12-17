@@ -284,7 +284,7 @@ function getTimeLeft(unlockAt: string) {
                     if (!confirm("Delete this capsule permanently?")) return;
 
                     const token = localStorage.getItem("token");
-                    await fetch(`http://localhost:5000/api/capsules/${c._id}`, {
+                    await fetch(`${API_URL}/api/capsules/${c._id}`, {
                       method: "DELETE",
                       headers: { Authorization: token || "" },
                     });

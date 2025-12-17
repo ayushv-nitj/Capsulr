@@ -1,5 +1,5 @@
 "use client";
-
+import { API_URL } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -21,7 +21,7 @@ export default function EditCapsule() {
 
   useEffect(() => {
     const fetchCapsule = async () => {
-      const res = await fetch(`http://localhost:5000/api/capsules/${id}`, {
+      const res = await fetch(`${API_URL}/api/capsules/${id}`, {
         headers: { Authorization: token || "" },
       });
 
@@ -68,7 +68,7 @@ export default function EditCapsule() {
   const localDate = new Date(`${unlockDate}T${unlockTime}`);
   const unlockAt = localDate.toISOString();
 
-  await fetch(`http://localhost:5000/api/capsules/${id}`, {
+  await fetch(`${API_URL}/api/capsules/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",

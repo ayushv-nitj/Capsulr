@@ -131,7 +131,7 @@ export default function CapsulePage() {
   const isRecipient = capsule?.recipients?.includes(currentUserEmail || "") ?? false;
 
   const fetchCapsule = async () => {
-    const res = await fetch(`http://localhost:5000/api/capsules/${id}`, {
+    const res = await fetch(`${API_URL}/api/capsules/${id}`, {
       headers: { Authorization: token || "" },
     });
     if (res.ok) {
@@ -147,7 +147,7 @@ export default function CapsulePage() {
   const fetchMemories = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/memories/${id}`, {
+      const res = await fetch(`${API_URL}/api/memories/${id}`, {
         headers: { Authorization: token || "" },
       });
       const data = await res.json();
@@ -166,7 +166,7 @@ export default function CapsulePage() {
 
 const fetchReactionsForMemory = async (memoryId: string) => {
   try {
-    const res = await fetch(`http://localhost:5000/api/reactions/${memoryId}`);
+    const res = await fetch(`${API_URL}/api/reactions/${memoryId}`);
     
     // Check if response is ok
     if (!res.ok) {
@@ -187,7 +187,7 @@ const fetchReactionsForMemory = async (memoryId: string) => {
 
 const fetchCommentsForMemory = async (memoryId: string) => {
   try {
-    const res = await fetch(`http://localhost:5000/api/comments/${memoryId}`);
+    const res = await fetch(`${API_URL}/api/comments/${memoryId}`);
     
     // Check if response is ok
     if (!res.ok) {
@@ -209,7 +209,7 @@ const fetchCommentsForMemory = async (memoryId: string) => {
     if (!isRecipient && !canEdit) return;
 
     try {
-      await fetch(`http://localhost:5000/api/reactions?email=${currentUserEmail}`, {
+      await fetch(`${API_URL}/api/reactions?email=${currentUserEmail}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -230,7 +230,7 @@ const fetchCommentsForMemory = async (memoryId: string) => {
     if (!isRecipient && !canEdit) return;
 
     try {
-      await fetch(`http://localhost:5000/api/comments?email=${currentUserEmail}`, {
+      await fetch(`${API_URL}/api/comments?email=${currentUserEmail}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -269,7 +269,7 @@ const fetchCommentsForMemory = async (memoryId: string) => {
 
     setAddingCollab(true);
     try {
-      await fetch(`http://localhost:5000/api/capsules/${id}/collaborators`, {
+      await fetch(`${API_URL}/api/capsules/${id}/collaborators`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -328,7 +328,7 @@ const fetchCommentsForMemory = async (memoryId: string) => {
       formData.append("type", mediaType);
       formData.append("caption", mediaCaption);
 
-      await fetch("http://localhost:5000/api/memories/media", {
+      await fetch(`${API_URL}/api/memories/media`, {
         method: "POST",
         headers: { Authorization: token || "" },
         body: formData,
@@ -350,7 +350,7 @@ const fetchCommentsForMemory = async (memoryId: string) => {
   const deleteMemory = async (memoryId: string) => {
     if (!confirm("Delete this memory permanently?")) return;
 
-    await fetch(`http://localhost:5000/api/memories/${memoryId}`, {
+    await fetch(`${API_URL}/api/memories/${memoryId}`, {
       method: "DELETE",
       headers: { Authorization: token || "" },
     });
@@ -373,7 +373,7 @@ const saveRecipients = async () => {
   const oldRecipients = capsule?.recipients || [];
   const newRecipients = recipients.filter(r => !oldRecipients.includes(r));
 
-  await fetch(`http://localhost:5000/api/capsules/${id}`, {
+  await fetch(`${API_URL}/api/capsules/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -384,7 +384,7 @@ const saveRecipients = async () => {
 
   // Notify newly added recipients
   if (newRecipients.length > 0) {
-    await fetch(`http://localhost:5000/api/capsules/${id}/notify-recipients`, {
+    await fetch(`${API_URL}/api/capsules/${id}/notify-recipients`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
