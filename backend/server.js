@@ -37,7 +37,8 @@ app.listen(PORT, () => {
 
 // Auto-unlock capsules every minute
 setInterval(async () => {
-  const Capsule = require("./models/capsule");
+  // Use correct case for the Capsule model so it works on case-sensitive filesystems (e.g. Linux in production)
+  const Capsule = require("./models/Capsule");
   const { sendEmail } = require("./utils/mailer");
   
   const now = new Date();
