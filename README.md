@@ -5,7 +5,12 @@
 > *“Some memories deserve to be opened later.”*
 
 ---
-Welcome to Capsulr![WhatsApp Image 2025-12-15 at 11 37 51_2ee43d61](https://github.com/user-attachments/assets/54573263-8d20-4889-82a8-7ffd63f8d95d)
+# 🎥 Demo Video:
+
+https://youtu.be/wyDj9zrrPZ4
+
+## Welcome to Capsulr
+![WhatsApp Image 2025-12-15 at 11 37 51_2ee43d61](https://github.com/user-attachments/assets/54573263-8d20-4889-82a8-7ffd63f8d95d)
 <img width="929" height="934" alt="image" src="https://github.com/user-attachments/assets/8e801dd6-dde0-4cc8-837b-6386fe21531b" />
 <img width="1400" height="970" alt="image" src="https://github.com/user-attachments/assets/e9e7ea25-4982-4bda-8b29-4c84f840319a" />
 <img width="1888" height="977" alt="image" src="https://github.com/user-attachments/assets/3baf1e7d-307a-4099-bc34-3183a3eda29c" />
@@ -86,14 +91,6 @@ NEXT_PUBLIC_API_URL=https://your-backend-url.onrender.com
 
 ---
 
-## 🧠 Planned Enhancements
-- 📧 Email notifications on capsule unlock
-- 🤖 AI Memory Assistant (summaries, captions, transcription)
-- 💬 Post-unlock reactions & comments
-- 🔒 Capsule privacy levels (private / shared / public)
-
----
-
 ## 🏗️ Tech Stack
 
 ### Frontend
@@ -139,35 +136,140 @@ capsulr/
 
 ---
 
+## 🖥️ Frontend Tech Stack
+
+- **Next.js (App Router)**
+- **TypeScript**
+- **Tailwind CSS**
+- **Framer Motion**
+- **React Quill**
+- **Client Components**
+
+### Frontend Responsibilities
+- Authentication handling
+- Capsule creation & listing
+- Real-time countdown updates
+- Rich text editor for memories
+- Media previews before upload
+- Permission-based rendering
+- Smooth animations & UX
+
+---
+
+## ⚙️ Backend Tech Stack
+
+- **Node.js**
+- **Express**
+- **MongoDB + Mongoose**
+- **JWT Authentication**
+- **Multer**
+- **Cloudinary**
+- **Nodemailer (emails)**
+
+### Backend Responsibilities
+- Authentication & authorization
+- Capsule lifecycle management
+- Auto-unlock logic
+- Media upload & storage
+- Collaborator management
+- Secure data persistence
+
+---
+
+## 🗄️ Database Models
+
+### User
+
+{
+  name: String,
+  email: String,
+  password: String,
+  profileImage: String
+}
+
+### Capsule
+
+{
+  title: String,
+  theme: String,
+  unlockAt: Date,
+  owner: ObjectId,
+  contributors: [ObjectId],
+  recipients: [String],
+  isLocked: Boolean,
+  isUnlocked: Boolean
+}
+
+### Memory
+
+{
+  capsuleId: ObjectId,
+  type: "text" | "image" | "audio" | "video",
+  content: String,
+  caption: String,
+  createdBy: ObjectId
+}
 
 
-🌍 Deployment
+---
 
-Frontend → Vercel
+# 🔐 Authentication & Roles
 
-Backend → Render
+Role	Permissions
 
-Database → MongoDB Atlas
+Owner	Full control
+Collaborator	Add/edit memories
+Recipient	View after unlock
 
-Media Storage → Cloudinary
 
-🔐 Security
+JWT tokens are stored securely in local storage and validated on every API request.
 
-JWT-based authentication
 
-Owner-only capsule management
+---
 
-Secure file uploads
+# ⏳ Capsule Locking Logic
 
-Environment-based secrets
+Capsules are locked by default
 
-Production-safe CORS setup
+Countdown runs in real time (frontend)
 
-🧪 Project Status
+Backend auto-unlocks capsules after unlock time
 
-✔ Active Development
-✔ Production-ready Architecture
-✔ Hackathon-grade Project
+Locked capsules:
+
+Editable by owner & collaborators
+
+Hidden from recipients
+
+Unlocked capsules:
+
+Visible to recipients
+
+Read-only access
+
+
+---
+
+## ☁️ Media Upload Flow
+
+1. User selects media file
+
+
+2. Preview displayed instantly
+
+
+3. File sent using FormData
+
+
+4. Multer processes file
+
+
+5. Cloudinary uploads file
+
+
+6. Secure URL stored in MongoDB
+
+
 
 👨‍💻 Author
 
