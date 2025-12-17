@@ -11,8 +11,11 @@ const app = express();
 app.use(cors({
   origin: [
     "http://localhost:3000",
-    "https://capsulr-five.vercel.app/"
+    // IMPORTANT: no trailing slash here, CORS checks must match exactly
+    "https://capsulr-five.vercel.app"
   ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Specify allowed methods
+  allowedHeaders: ['Content-Type', 'Authorization'] ,
   credentials: true
 }));
 
